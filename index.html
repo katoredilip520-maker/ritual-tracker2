@@ -1556,6 +1556,119 @@
             color: var(--text-muted);
         }
         
+        /* --- NEW: Quick Actions --- */
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .quick-action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .quick-action-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        /* --- NEW: Bulk Actions --- */
+        .bulk-actions {
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .bulk-actions.active {
+            display: block;
+        }
+        
+        .bulk-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .bulk-checkbox {
+            margin-right: 0.5rem;
+        }
+        
+        /* --- NEW: Quick Add Ritual --- */
+        .quick-add-ritual {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 99;
+            transition: all 0.3s;
+        }
+        
+        .quick-add-ritual:hover {
+            transform: scale(1.1);
+            background-color: var(--primary-hover);
+        }
+        
+        /* --- NEW: Template Quick Log --- */
+        .template-quick-log {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .template-quick-log h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .template-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .template-option {
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .template-option:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
         /* --- Mobile Optimizations --- */
         @media (max-width: 480px) {
             .container {
@@ -1629,6 +1742,11 @@
             #chart-svg-container {
                 height: 250px;
             }
+            
+            .quick-add-ritual {
+                bottom: 90px;
+                right: 10px;
+            }
         }
         
         /* --- Accessibility Improvements --- */
@@ -1696,11 +1814,22 @@
             <button id="cancel-install" class="form-button btn-secondary">Not Now</button>
         </div>
         
+        <!-- Quick Add Ritual Button -->
+        <div id="quick-add-ritual" class="quick-add-ritual" title="Quick Add Ritual">+</div>
+        
         <div id="today-view" class="view active">
             <div class="date-nav">
                 <button id="prev-day-btn" aria-label="Previous day">&lt;</button>
                 <h1 id="current-date-display"></h1>
                 <button id="next-day-btn" aria-label="Next day">&gt;</button>
+            </div>
+            
+            <!-- NEW: Quick Actions -->
+            <div class="quick-actions">
+                <button id="quick-log-good-day" class="quick-action-btn">Quick Log: Good Day</button>
+                <button id="quick-log-average-day" class="quick-action-btn">Quick Log: Average Day</button>
+                <button id="quick-log-struggle-day" class="quick-action-btn">Quick Log: Struggle Day</button>
+                <button id="copy-yesterday-scores" class="quick-action-btn">Copy Yesterday's Scores</button>
             </div>
             
             <!-- NEW: Stats Overview -->
@@ -1813,6 +1942,19 @@
         <div id="rituals-view" class="view">
             <h1>Manage Rituals</h1>
             
+            <!-- NEW: Bulk Actions -->
+            <div id="bulk-actions" class="bulk-actions">
+                <div class="bulk-actions-header">
+                    <h3>Bulk Actions</h3>
+                    <button id="cancel-bulk-actions" class="form-button btn-secondary">Cancel</button>
+                </div>
+                <div class="quick-actions">
+                    <button id="bulk-delete" class="quick-action-btn">Delete Selected</button>
+                    <button id="bulk-change-time" class="quick-action-btn">Change Time</button>
+                    <button id="bulk-duplicate" class="quick-action-btn">Duplicate Selected</button>
+                </div>
+            </div>
+            
             <!-- NEW: Beginner Templates -->
             <div class="template-section">
                 <h2>Beginner Templates</h2>
@@ -1866,6 +2008,12 @@
                     <div class="stat-value" id="longest-streak">0</div>
                     <div class="stat-label">Longest Streak</div>
                 </div>
+            </div>
+            
+            <div class="quick-actions">
+                <button id="enable-bulk-edit" class="quick-action-btn">Bulk Edit</button>
+                <button id="export-rituals" class="quick-action-btn">Export Rituals</button>
+                <button id="import-rituals" class="quick-action-btn">Import Rituals</button>
             </div>
             
             <div id="concentration-rituals-manager">
@@ -2249,6 +2397,26 @@
         </div>
     </div>
 
+    <div id="quick-add-modal" class="modal">
+        <div class="modal-content">
+            <h2>Quick Add Ritual</h2>
+            <input type="text" id="quick-ritual-name" class="form-input" placeholder="Ritual name" aria-label="Ritual name">
+            <select id="quick-ritual-type" class="form-select" aria-label="Ritual type">
+                <option value="concentration">Concentration</option>
+                <option value="willpower">Willpower</option>
+            </select>
+            <select id="quick-ritual-time" class="form-select" aria-label="Time of day">
+                <option value="any">Any Time</option>
+                <option value="morning">Morning</option>
+                <option value="evening">Evening</option>
+            </select>
+            <div class="modal-actions">
+                <button id="cancel-quick-add" class="form-button btn-secondary">Cancel</button>
+                <button id="save-quick-add" class="form-button">Add</button>
+            </div>
+        </div>
+    </div>
+
     <div id="notification" class="notification">
         <strong>Time to log your rituals!</strong>
         <p>Don't forget to track your progress for today.</p>
@@ -2367,6 +2535,8 @@
             let selectedHabitId = null;
             let reminderTimeouts = [];
             let currentNoteEditId = null;
+            let bulkEditMode = false;
+            let selectedRituals = new Set();
             
             // Timer state
             let timerInterval = null;
@@ -2430,6 +2600,27 @@
             const addReminderBtn = document.getElementById('add-reminder-btn');
             const reminderList = document.getElementById('reminder-list');
             const notification = document.getElementById('notification');
+            
+            // NEW: Productivity elements
+            const quickAddRitualBtn = document.getElementById('quick-add-ritual');
+            const quickAddModal = document.getElementById('quick-add-modal');
+            const quickRitualName = document.getElementById('quick-ritual-name');
+            const quickRitualType = document.getElementById('quick-ritual-type');
+            const quickRitualTime = document.getElementById('quick-ritual-time');
+            const saveQuickAdd = document.getElementById('save-quick-add');
+            const cancelQuickAdd = document.getElementById('cancel-quick-add');
+            const quickLogGoodDay = document.getElementById('quick-log-good-day');
+            const quickLogAverageDay = document.getElementById('quick-log-average-day');
+            const quickLogStruggleDay = document.getElementById('quick-log-struggle-day');
+            const copyYesterdayScores = document.getElementById('copy-yesterday-scores');
+            const bulkActions = document.getElementById('bulk-actions');
+            const enableBulkEdit = document.getElementById('enable-bulk-edit');
+            const cancelBulkActions = document.getElementById('cancel-bulk-actions');
+            const bulkDelete = document.getElementById('bulk-delete');
+            const bulkChangeTime = document.getElementById('bulk-change-time');
+            const bulkDuplicate = document.getElementById('bulk-duplicate');
+            const exportRituals = document.getElementById('export-rituals');
+            const importRituals = document.getElementById('import-rituals');
             
             // Chart elements
             const chartSvgContainer = document.getElementById('chart-svg-container');
@@ -2535,14 +2726,24 @@
                 return date > today;
             };
 
-            // Check if a ritual has any scores
-            const hasScores = (ritualId) => {
+            // NEW: Optimized data structure for faster lookups
+            let ritualScoresIndex = {};
+            
+            const buildRitualScoresIndex = () => {
+                ritualScoresIndex = {};
                 for (const date in appData.scores) {
-                    if (appData.scores[date][ritualId] !== undefined) {
-                        return true;
+                    for (const ritualId in appData.scores[date]) {
+                        if (!ritualScoresIndex[ritualId]) {
+                            ritualScoresIndex[ritualId] = [];
+                        }
+                        ritualScoresIndex[ritualId].push(date);
                     }
                 }
-                return false;
+            };
+
+            // Check if a ritual has any scores (optimized)
+            const hasScores = (ritualId) => {
+                return !!ritualScoresIndex[ritualId] && ritualScoresIndex[ritualId].length > 0;
             };
 
             // Calculate average scores
@@ -2585,7 +2786,7 @@
                 };
             };
 
-            // --- NEW FEATURE FUNCTIONS ---
+            // --- NEW PRODUCTIVITY FEATURES ---
 
             // Calculate lock-in progress
             const calculateLockinProgress = (ritual) => {
@@ -2835,6 +3036,226 @@
                 saveData();
                 renderManageRitualsView();
                 showNotification(`${templateName.charAt(0).toUpperCase() + templateName.slice(1)} rituals added!`);
+            };
+
+            // --- NEW PRODUCTIVITY FUNCTIONS ---
+
+            // Quick add ritual
+            const initializeQuickAdd = () => {
+                quickAddRitualBtn.addEventListener('click', () => {
+                    quickAddModal.style.display = 'flex';
+                    quickRitualName.focus();
+                });
+                
+                saveQuickAdd.addEventListener('click', () => {
+                    const name = quickRitualName.value.trim();
+                    const type = quickRitualType.value;
+                    const time = quickRitualTime.value;
+                    
+                    if (name) {
+                        const newRitual = {
+                            id: Date.now() + Math.random(),
+                            name,
+                            description: '',
+                            time,
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        appData.rituals[type].push(newRitual);
+                        saveData();
+                        
+                        // Refresh views
+                        renderTodayView();
+                        renderManageRitualsView();
+                        
+                        // Close modal and reset
+                        quickAddModal.style.display = 'none';
+                        quickRitualName.value = '';
+                        quickRitualType.value = 'concentration';
+                        quickRitualTime.value = 'any';
+                        
+                        showNotification('Ritual added successfully!');
+                    }
+                });
+                
+                cancelQuickAdd.addEventListener('click', () => {
+                    quickAddModal.style.display = 'none';
+                    quickRitualName.value = '';
+                });
+            };
+
+            // Quick log functions
+            const initializeQuickLog = () => {
+                quickLogGoodDay.addEventListener('click', () => {
+                    quickLogScores(3);
+                });
+                
+                quickLogAverageDay.addEventListener('click', () => {
+                    quickLogScores(2);
+                });
+                
+                quickLogStruggleDay.addEventListener('click', () => {
+                    quickLogScores(1);
+                });
+                
+                copyYesterdayScores.addEventListener('click', () => {
+                    copyPreviousDayScores();
+                });
+            };
+
+            const quickLogScores = (score) => {
+                const dateKey = formatDate(currentDate);
+                const allRituals = [...appData.rituals.concentration, ...appData.rituals.willpower];
+                
+                if (!appData.scores[dateKey]) {
+                    appData.scores[dateKey] = {};
+                }
+                
+                allRituals.forEach(ritual => {
+                    appData.scores[dateKey][ritual.id] = score;
+                });
+                
+                saveData();
+                renderTodayView();
+                showNotification(`All rituals logged with score ${score}`);
+            };
+
+            const copyPreviousDayScores = () => {
+                const yesterday = new Date(currentDate);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayKey = formatDate(yesterday);
+                const todayKey = formatDate(currentDate);
+                
+                if (appData.scores[yesterdayKey]) {
+                    appData.scores[todayKey] = { ...appData.scores[yesterdayKey] };
+                    saveData();
+                    renderTodayView();
+                    showNotification("Yesterday's scores copied to today");
+                } else {
+                    showNotification("No scores found for yesterday");
+                }
+            };
+
+            // Bulk actions
+            const initializeBulkActions = () => {
+                enableBulkEdit.addEventListener('click', () => {
+                    bulkEditMode = true;
+                    bulkActions.classList.add('active');
+                    renderManageRitualsView();
+                });
+                
+                cancelBulkActions.addEventListener('click', () => {
+                    bulkEditMode = false;
+                    selectedRituals.clear();
+                    bulkActions.classList.remove('active');
+                    renderManageRitualsView();
+                });
+                
+                bulkDelete.addEventListener('click', () => {
+                    if (selectedRituals.size === 0) {
+                        showNotification("No rituals selected");
+                        return;
+                    }
+                    
+                    if (confirm(`Delete ${selectedRituals.size} selected rituals?`)) {
+                        // Filter out selected rituals
+                        appData.rituals.concentration = appData.rituals.concentration.filter(
+                            ritual => !selectedRituals.has(ritual.id)
+                        );
+                        appData.rituals.willpower = appData.rituals.willpower.filter(
+                            ritual => !selectedRituals.has(ritual.id)
+                        );
+                        
+                        saveData();
+                        selectedRituals.clear();
+                        bulkEditMode = false;
+                        bulkActions.classList.remove('active');
+                        renderManageRitualsView();
+                        showNotification(`${selectedRituals.size} rituals deleted`);
+                    }
+                });
+                
+                bulkDuplicate.addEventListener('click', () => {
+                    if (selectedRituals.size === 0) {
+                        showNotification("No rituals selected");
+                        return;
+                    }
+                    
+                    // Duplicate selected rituals
+                    const allRituals = [...appData.rituals.concentration, ...appData.rituals.willpower];
+                    selectedRituals.forEach(id => {
+                        const ritual = allRituals.find(r => r.id === id);
+                        if (ritual) {
+                            const duplicate = {
+                                ...ritual,
+                                id: Date.now() + Math.random(),
+                                name: `${ritual.name} (Copy)`,
+                                createdAt: new Date().toISOString()
+                            };
+                            
+                            appData.rituals[ritual.type === 'concentration' ? 'concentration' : 'willpower'].push(duplicate);
+                        }
+                    });
+                    
+                    saveData();
+                    renderManageRitualsView();
+                    showNotification(`${selectedRituals.size} rituals duplicated`);
+                });
+            };
+
+            // Export/import rituals
+            const initializeRitualExportImport = () => {
+                exportRituals.addEventListener('click', () => {
+                    const exportData = {
+                        rituals: appData.rituals,
+                        exportDate: new Date().toISOString()
+                    };
+                    
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `rituals-backup-${formatDate(new Date())}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showNotification('Rituals exported successfully!');
+                });
+                
+                importRituals.addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                try {
+                                    const importedData = JSON.parse(e.target.result);
+                                    if (importedData.rituals) {
+                                        if (confirm('This will replace all current rituals. Continue?')) {
+                                            appData.rituals = importedData.rituals;
+                                            saveData();
+                                            renderTodayView();
+                                            renderManageRitualsView();
+                                            showNotification('Rituals imported successfully!');
+                                        }
+                                    } else {
+                                        throw new Error('Invalid rituals file');
+                                    }
+                                } catch (error) {
+                                    alert('Error importing rituals: ' + error.message);
+                                }
+                            };
+                            reader.readAsText(file);
+                        }
+                    };
+                    input.click();
+                });
             };
 
             // --- CHART FUNCTIONS ---
@@ -3419,7 +3840,12 @@
                         if (ritualHasScores || inLockin) {
                             actionButtons = '<span style="color: var(--text-muted); font-size: 0.9rem;">Locked</span>';
                         } else {
-                            actionButtons = '<div class="action-buttons"><button class="edit-btn" aria-label="Edit ritual">✏️</button><button class="delete-btn" aria-label="Delete ritual">🗑️</button></div>';
+                            if (bulkEditMode) {
+                                const isSelected = selectedRituals.has(ritual.id);
+                                actionButtons = `<input type="checkbox" class="bulk-checkbox" ${isSelected ? 'checked' : ''} data-id="${ritual.id}">`;
+                            } else {
+                                actionButtons = '<div class="action-buttons"><button class="edit-btn" aria-label="Edit ritual">✏️</button><button class="delete-btn" aria-label="Delete ritual">🗑️</button></div>';
+                            }
                         }
                         
                         li.innerHTML = `
@@ -3455,6 +3881,20 @@
                 };
                 renderList('concentration', concentrationList);
                 renderList('willpower', willpowerList);
+                
+                // Add bulk selection handlers
+                if (bulkEditMode) {
+                    document.querySelectorAll('.bulk-checkbox').forEach(checkbox => {
+                        checkbox.addEventListener('change', (e) => {
+                            const id = parseFloat(e.target.dataset.id);
+                            if (e.target.checked) {
+                                selectedRituals.add(id);
+                            } else {
+                                selectedRituals.delete(id);
+                            }
+                        });
+                    });
+                }
             };
             
             const addRitual = (type, nameInput, descriptionInput, timeSelect) => {
@@ -4099,9 +4539,14 @@
             // --- INITIALIZATION ---
             loadData();
             loadTheme();
+            buildRitualScoresIndex(); // Build the optimized index
             setupReminders();
             initializeTemplates();
             initializeChartControls();
+            initializeQuickAdd();
+            initializeQuickLog();
+            initializeBulkActions();
+            initializeRitualExportImport();
             updateTimerDisplay();
             renderTodayView();
         });
