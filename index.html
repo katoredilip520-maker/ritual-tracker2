@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ritual Tracker</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Ritual%20Tracker%22%2C%22short_name%22%3A%22Rituals%22%2C%22description%22%3A%22Master%20awareness%2C%20concentration%2C%20and%20willpower%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a1a1a%22%2C%22theme_color%22%3A%22%238B7355%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <meta name="theme-color" content="#8B7355">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --surface-color: #2c2c2c;
+            --primary-color: #8B7355;
+            --primary-hover: #6d5a43;
+            --text-color: #f0f0f0;
+            --text-muted: #888;
+            --border-color: #444;
+            --score-3: #4CAF50;
+            --score-2: #8BC34A;
+            --score-1: #FFC107;
+            --score-0: #F44336;
+            --score-na: #9E9E9E;
+            --accent-gold: #D4AF37;
+            --accent-earth: #795548;
+            --morning-color: #FFA000;
+            --evening-color: #7B1FA2;
+            --streak-color: #FF5722;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f5f1e8;
+            --surface-color: #ffffff;
+            --primary-color: #8B7355;
+            --primary-hover: #6d5a43;
+            --text-color: #333333;
+            --text-muted: #666;
+            --border-color: #ddd;
+            --accent-gold: #D4AF37;
+            --accent-earth: #795548;
+            --morning-color: #FF8F00;
+            --evening-color: #6A1B9A;
+            --streak-color: #E64A19;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overscroll-behavior-y: contain;
+            transition: background-color 0.3s, color 0.3s;
+            line-height: 1.6;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            padding-bottom: 90px; /* Extra space for mobile nav */
+        }
+
+        /* --- Navigation --- */
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--surface-color);
+            padding: 0.5rem 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        nav button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            flex-grow: 1;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 0 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-height: 50px;
+            justify-content: center;
+        }
+        
+        nav button.active {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+        
+        nav button:hover {
+            color: var(--primary-color);
+        }
+        
+        .nav-icon {
+            font-size: 1.2rem;
+        }
+
+        /* --- Views --- */
+        .view {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            margin-top: 2rem;
+            font-size: 1.3rem;
+            color: var(--accent-earth);
+        }
+
+        /* --- Today View --- */
+        .date-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .date-nav h1 { 
+            border-bottom: none; 
+            margin: 0; 
+            font-size: 1.3rem;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .date-nav button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .date-nav button:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .date-nav button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .ritual-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0;
+        }
+        
+        .ritual-item {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .ritual-item.morning {
+            border-left-color: var(--morning-color);
+        }
+        
+        .ritual-item.evening {
+            border-left-color: var(--evening-color);
+        }
+        
+        .ritual-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .ritual-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .ritual-item-header p { 
+            margin: 0; 
+            font-size: 1.1rem; 
+            font-weight: 600;
+            flex: 1;
+        }
+        
+        .scoring-buttons { 
+            display: flex; 
+            gap: 0.5rem; 
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .score-btn {
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            width: 44px; 
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .score-btn:hover { 
+            transform: scale(1.1); 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .score-btn.selected { 
+            color: white; 
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .score-btn[data-score="3"].selected { background-color: var(--score-3); border-color: var(--score-3); }
+        .score-btn[data-score="2"].selected { background-color: var(--score-2); border-color: var(--score-2); }
+        .score-btn[data-score="1"].selected { background-color: var(--score-1); border-color: var(--score-1); }
+        .score-btn[data-score="0"].selected { background-color: var(--score-0); border-color: var(--score-0); }
+        .score-btn[data-score="-1"].selected { background-color: var(--score-na); border-color: var(--score-na); }
+
+        .score-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+            min-height: 20px;
+            padding-top: 0.5rem;
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+        
+        .no-rituals-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            font-style: italic;
+        }
+        
+        /* --- NEW: Lock-in Progress --- */
+        .lockin-progress {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .progress-bar {
+            flex-grow: 1;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        
+        /* --- NEW: Streak Indicator --- */
+        .streak-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background-color: var(--streak-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        /* --- NEW: Energy Tracking --- */
+        .energy-tracking {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .energy-tracking h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .energy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .energy-item {
+            text-align: center;
+        }
+        
+        .energy-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .energy-slider {
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+        
+        .energy-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        /* --- NEW: Distraction Logging --- */
+        .distraction-logging {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .distraction-logging h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .distraction-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .distraction-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .distraction-list {
+            margin-top: 1rem;
+        }
+        
+        .distraction-item {
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid var(--score-0);
+        }
+        
+        .distraction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .distraction-type {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .distraction-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .distraction-trigger {
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+        
+        /* --- NEW: Daily Teaching --- */
+        .daily-teaching {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-gold));
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .daily-teaching h3 {
+            margin-top: 0;
+            color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 0.5rem;
+        }
+        
+        .teaching-content {
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .teaching-author {
+            text-align: right;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* --- Notes Section --- */
+        .notes-section {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .notes-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .notes-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        /* --- Timer Section --- */
+        .timer-section {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        
+        .timer-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .timer-display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            color: var(--primary-color);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .timer-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            font-weight: 600;
+            min-height: 44px;
+            min-width: 100px;
+        }
+        
+        .timer-btn:hover { 
+            background-color: var(--primary-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .timer-btn:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .timer-presets {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        .timer-preset {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .timer-preset:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* --- Manage Rituals View --- */
+        .add-ritual-form { 
+            display: flex; 
+            gap: 1rem; 
+            margin-bottom: 1.5rem; 
+            background-color: var(--surface-color);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex-direction: column;
+        }
+        
+        @media (min-width: 480px) {
+            .add-ritual-form {
+                flex-direction: row;
+            }
+        }
+        
+        .form-input {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        .form-select {
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .form-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            font-weight: 600;
+            min-height: 44px;
+        }
+        
+        .form-button:hover { 
+            background-color: var(--primary-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .manage-ritual-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 1.2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-left: 4px solid var(--accent-earth);
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        @media (min-width: 480px) {
+            .manage-ritual-item {
+                flex-direction: row;
+                gap: 0;
+            }
+        }
+        
+        .manage-ritual-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .manage-ritual-item .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .manage-ritual-item .action-buttons button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: color 0.3s;
+            border-radius: 4px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .manage-ritual-item .action-buttons button:hover {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+        
+        .manage-ritual-item.locked {
+            opacity: 0.7;
+            border-left: 4px solid var(--score-3);
+        }
+        
+        .locked-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-style: italic;
+            width: 100%;
+        }
+        
+        .ritual-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-style: italic;
+            width: 100%;
+        }
+        
+        .ritual-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .ritual-time {
+            background-color: var(--bg-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+        }
+        
+        .ritual-time.morning {
+            background-color: var(--morning-color);
+            color: white;
+        }
+        
+        .ritual-time.evening {
+            background-color: var(--evening-color);
+            color: white;
+        }
+        
+        .score-stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .stat-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            flex: 1;
+            min-width: 120px;
+            max-width: 200px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .concentration-stat .stat-value { color: var(--score-2); }
+        .willpower-stat .stat-value { color: var(--score-1); }
+        .combined-stat .stat-value { color: var(--primary-color); }
+        .streak-stat .stat-value { color: var(--streak-color); }
+
+        /* --- NEW: Beginner Templates --- */
+        .template-section {
+            margin: 2rem 0;
+        }
+        
+        .template-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .template-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        
+        .template-card h4 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        
+        .template-card ul {
+            padding-left: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .template-card li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* --- Performance View --- */
+        .perf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .perf-controls select, .perf-controls button {
+            padding: 0.75rem;
+            font-size: 1rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s;
+            min-height: 44px;
+        }
+        
+        .perf-controls select:focus, .perf-controls button:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .calendar-header { 
+            font-weight: bold; 
+            color: var(--text-muted); 
+            font-size: 0.7rem; 
+            padding-bottom: 0.5rem; 
+        }
+        
+        .calendar-day {
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background-color: var(--surface-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .calendar-day.empty { background-color: transparent; cursor: default; }
+        
+        .calendar-day.today { 
+            border: 2px solid var(--primary-color); 
+            font-weight: bold;
+        }
+        
+        .calendar-day.has-data:hover { 
+            border-color: var(--text-color); 
+            transform: scale(1.05);
+        }
+        
+        #day-tooltip {
+            position: fixed;
+            display: none;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 101;
+            font-size: 0.9rem;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 90vw;
+        }
+        
+        #chart-container {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        #chart-container h3 { 
+            text-align: center; 
+            margin-top: 0; 
+            color: var(--primary-color);
+        }
+        
+        #chart-svg-container {
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .chart-tooltip {
+            position: absolute;
+            display: none;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .chart-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .chart-toggle button {
+            padding: 0.75rem 1rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            min-height: 44px;
+            flex: 1;
+            min-width: 80px;
+        }
+        
+        .chart-toggle button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .chart-toggle button:hover:not(.active) {
+            background-color: rgba(139, 115, 85, 0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .habit-selector {
+            margin-bottom: 1.5rem;
+        }
+        
+        .habit-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .habit-selector select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+
+        /* --- Notes View --- */
+        .notes-view-container {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .notes-view-container h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .notes-list {
+            margin-top: 1.5rem;
+        }
+        
+        .note-item {
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s;
+        }
+        
+        .note-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .note-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+        
+        .note-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .note-content {
+            color: var(--text-color);
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        
+        .note-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        .note-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .note-action-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+        
+        .no-notes-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            font-style: italic;
+        }
+
+        /* --- Settings View --- */
+        .settings-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .settings-card h3 { 
+            margin-top: 0; 
+            color: var(--primary-color); 
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .settings-card p { 
+            color: var(--text-muted); 
+            font-size: 0.9rem; 
+            margin-bottom: 1rem;
+        }
+        
+        .settings-button { 
+            width: 100%; 
+            padding: 1rem; 
+            font-size: 1rem; 
+            margin-top: 0.5rem; 
+            min-height: 44px;
+        }
+        
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+        
+        .theme-toggle-label {
+            flex-grow: 1;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .reminder-settings {
+            margin-top: 1rem;
+        }
+        
+        .reminder-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .reminder-time {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .reminder-time input {
+            padding: 0.75rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .reminder-time input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        .add-reminder-btn {
+            margin-top: 1rem;
+            width: 100%;
+        }
+        
+        .reminder-list {
+            margin-top: 1rem;
+        }
+        
+        .reminder-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .reminder-item button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .reminder-item button:hover {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+
+        /* --- Summary View --- */
+        .summary-content {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .summary-section {
+            margin-bottom: 2rem;
+        }
+        
+        .summary-section h3 {
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .summary-section ul {
+            padding-left: 1.5rem;
+        }
+        
+        .summary-section li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .quote-box {
+            background-color: var(--bg-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            font-style: italic;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .concept-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+        }
+        
+        .concept-table th, .concept-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        
+        .concept-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .concept-table tr:nth-child(even) {
+            background-color: rgba(139, 115, 85, 0.05);
+        }
+
+        /* --- Modal --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000;
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center; 
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 1.5rem; 
+            border-radius: 12px;
+            width: 100%; 
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h2 { 
+            margin-top: 0; 
+            color: var(--primary-color);
+        }
+        
+        .modal-actions { 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 1rem; 
+            margin-top: 1.5rem; 
+        }
+        
+        .btn-secondary { 
+            background-color: var(--text-muted); 
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        /* --- Notification --- */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* --- Date Validation Styles --- */
+        .future-date-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 1rem;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
+        .scoring-disabled {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .scoring-disabled .score-btn {
+            background-color: var(--text-muted);
+            color: var(--bg-color);
+        }
+        
+        /* --- App Header --- */
+        .app-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .app-title {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 300;
+        }
+        
+        .app-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin: 0.5rem 0 0;
+            font-style: italic;
+        }
+        
+        /* --- NEW: Stats Overview --- */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .stat-item {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        /* --- Mobile Optimizations --- */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.8rem;
+                padding-bottom: 90px;
+            }
+            
+            h1 {
+                font-size: 1.4rem;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
+            }
+            
+            .date-nav h1 {
+                font-size: 1.1rem;
+            }
+            
+            .ritual-item {
+                padding: 1rem;
+            }
+            
+            .score-btn {
+                width: 40px;
+                height: 40px;
+                min-width: 40px;
+                min-height: 40px;
+            }
+            
+            .stat-card {
+                min-width: 100px;
+                padding: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .calendar-day {
+                height: 32px;
+                font-size: 0.75rem;
+            }
+            
+            .chart-toggle button {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .perf-controls {
+                gap: 0.3rem;
+            }
+            
+            .perf-controls select, .perf-controls button {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+            
+            .timer-display {
+                font-size: 2.5rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .energy-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* --- Accessibility Improvements --- */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        button:focus-visible,
+        select:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* --- Install Prompt --- */
+        .install-prompt {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-color);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            border: 1px solid var(--primary-color);
+        }
+        
+        .install-prompt button {
+            margin: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="app-header">
+            <h1 class="app-title">Ritual Tracker</h1>
+            <p class="app-subtitle">Master your awareness, concentration, and willpower</p>
+        </div>
+        
+        <!-- Install Prompt -->
+        <div id="install-prompt" class="install-prompt">
+            <p>Install Ritual Tracker for better experience?</p>
+            <button id="install-btn" class="form-button">Install</button>
+            <button id="cancel-install" class="form-button btn-secondary">Not Now</button>
+        </div>
+        
+        <div id="today-view" class="view active">
+            <div class="date-nav">
+                <button id="prev-day-btn" aria-label="Previous day">&lt;</button>
+                <h1 id="current-date-display"></h1>
+                <button id="next-day-btn" aria-label="Next day">&gt;</button>
+            </div>
+            
+            <!-- NEW: Stats Overview -->
+            <div class="stats-overview">
+                <div class="stat-item">
+                    <div class="stat-number" id="current-streak">0</div>
+                    <div class="stat-text">Current Streak 🔥</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="completion-rate">0%</div>
+                    <div class="stat-text">Completion Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="lockin-progress">0/0</div>
+                    <div class="stat-text">Lock-in Progress</div>
+                </div>
+            </div>
+            
+            <!-- NEW: Daily Teaching -->
+            <div class="daily-teaching">
+                <h3>Today's Wisdom</h3>
+                <div class="teaching-content" id="daily-teaching-content">
+                    Loading today's teaching...
+                </div>
+                <div class="teaching-author" id="daily-teaching-author"></div>
+            </div>
+            
+            <div id="date-validation-message"></div>
+            <div id="today-rituals-container"></div>
+            
+            <!-- NEW: Energy Tracking -->
+            <div class="energy-tracking">
+                <h3>Energy Levels</h3>
+                <div class="energy-grid">
+                    <div class="energy-item">
+                        <div class="energy-label">Mental Energy</div>
+                        <input type="range" min="1" max="10" value="5" class="energy-slider" id="mental-energy">
+                        <div class="energy-value" id="mental-value">5</div>
+                    </div>
+                    <div class="energy-item">
+                        <div class="energy-label">Physical Energy</div>
+                        <input type="range" min="1" max="10" value="5" class="energy-slider" id="physical-energy">
+                        <div class="energy-value" id="physical-value">5</div>
+                    </div>
+                    <div class="energy-item">
+                        <div class="energy-label">Emotional Energy</div>
+                        <input type="range" min="1" max="10" value="5" class="energy-slider" id="emotional-energy">
+                        <div class="energy-value" id="emotional-value">5</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NEW: Distraction Logging -->
+            <div class="distraction-logging">
+                <h3>Distraction Log</h3>
+                <form id="distraction-form" class="distraction-form">
+                    <div class="distraction-input-group">
+                        <label for="distraction-type">Type of Distraction</label>
+                        <select id="distraction-type" class="form-select" required>
+                            <option value="">Select type...</option>
+                            <option value="social-media">Social Media</option>
+                            <option value="procrastination">Procrastination</option>
+                            <option value="negative-thoughts">Negative Thoughts</option>
+                            <option value="phone-calls">Phone Calls</option>
+                            <option value="emails">Emails</option>
+                            <option value="noise">Environmental Noise</option>
+                            <option value="internal-dialogue">Internal Dialogue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="distraction-input-group">
+                        <label for="distraction-trigger">Trigger/Cause</label>
+                        <input type="text" id="distraction-trigger" class="form-input" placeholder="What triggered this distraction?" required>
+                    </div>
+                    <div class="distraction-input-group">
+                        <label for="distraction-ritual">Related Ritual (Optional)</label>
+                        <select id="distraction-ritual" class="form-select">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="form-button">Log Distraction</button>
+                </form>
+                <div class="distraction-list" id="distraction-list">
+                    <!-- Distractions will be listed here -->
+                </div>
+            </div>
+            
+            <div class="timer-section">
+                <h3>Focus Timer</h3>
+                <div class="timer-display" id="timer-display">25:00</div>
+                <div class="timer-controls">
+                    <button id="start-timer" class="timer-btn">Start</button>
+                    <button id="pause-timer" class="timer-btn" disabled>Pause</button>
+                    <button id="reset-timer" class="timer-btn">Reset</button>
+                </div>
+                <div class="timer-presets">
+                    <button class="timer-preset" data-minutes="5">5 min</button>
+                    <button class="timer-preset" data-minutes="15">15 min</button>
+                    <button class="timer-preset" data-minutes="25">25 min</button>
+                    <button class="timer-preset" data-minutes="45">45 min</button>
+                </div>
+            </div>
+            
+            <div class="notes-section">
+                <h3>Daily Notes</h3>
+                <textarea id="daily-notes" class="notes-textarea" placeholder="Reflect on your day, note any insights, or track additional observations..."></textarea>
+            </div>
+        </div>
+
+        <div id="rituals-view" class="view">
+            <h1>Manage Rituals</h1>
+            
+            <!-- NEW: Beginner Templates -->
+            <div class="template-section">
+                <h2>Beginner Templates</h2>
+                <p>Start with these pre-built routines based on Dandapani's teachings:</p>
+                <div class="template-cards">
+                    <div class="template-card" data-template="morning">
+                        <h4>Morning Foundation</h4>
+                        <ul>
+                            <li>10-min meditation</li>
+                            <li>Make your bed</li>
+                            <li>Plan your day</li>
+                            <li>Hydrate with water</li>
+                        </ul>
+                    </div>
+                    <div class="template-card" data-template="evening">
+                        <h4>Evening Wind-down</h4>
+                        <ul>
+                            <li>Gratitude journaling</li>
+                            <li>Daily reflection</li>
+                            <li>Prepare for tomorrow</li>
+                            <li>Digital detox</li>
+                        </ul>
+                    </div>
+                    <div class="template-card" data-template="focus">
+                        <h4>Focus Builder</h4>
+                        <ul>
+                            <li>Pomodoro sessions</li>
+                            <li>Single-tasking practice</li>
+                            <li>Breath awareness</li>
+                            <li>Distraction logging</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Score Statistics -->
+            <div class="score-stats">
+                <div class="stat-card concentration-stat">
+                    <div class="stat-value" id="concentration-avg">0.00</div>
+                    <div class="stat-label">Concentration Avg</div>
+                </div>
+                <div class="stat-card willpower-stat">
+                    <div class="stat-value" id="willpower-avg">0.00</div>
+                    <div class="stat-label">Willpower Avg</div>
+                </div>
+                <div class="stat-card combined-stat">
+                    <div class="stat-value" id="combined-avg">0.00</div>
+                    <div class="stat-label">Combined Avg</div>
+                </div>
+                <div class="stat-card streak-stat">
+                    <div class="stat-value" id="longest-streak">0</div>
+                    <div class="stat-label">Longest Streak</div>
+                </div>
+            </div>
+            
+            <div id="concentration-rituals-manager">
+                <h2>Concentration</h2>
+                <form id="add-concentration-form" class="add-ritual-form">
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <input type="text" id="new-concentration-ritual" class="form-input" placeholder="New concentration ritual..." required aria-label="New concentration ritual">
+                        <input type="text" id="new-concentration-description" class="form-input" placeholder="Description (optional)" aria-label="Ritual description">
+                        <select id="new-concentration-time" class="form-select" aria-label="Time of day">
+                            <option value="any">Any Time</option>
+                            <option value="morning">Morning</option>
+                            <option value="evening">Evening</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="form-button">Add</button>
+                </form>
+                <ul id="concentration-rituals-list" class="ritual-list"></ul>
+            </div>
+            <div id="willpower-rituals-manager">
+                <h2>Willpower</h2>
+                <form id="add-willpower-form" class="add-ritual-form">
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <input type="text" id="new-willpower-ritual" class="form-input" placeholder="New willpower ritual..." required aria-label="New willpower ritual">
+                        <input type="text" id="new-willpower-description" class="form-input" placeholder="Description (optional)" aria-label="Ritual description">
+                        <select id="new-willpower-time" class="form-select" aria-label="Time of day">
+                            <option value="any">Any Time</option>
+                            <option value="morning">Morning</option>
+                            <option value="evening">Evening</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="form-button">Add</button>
+                </form>
+                <ul id="willpower-rituals-list" class="ritual-list"></ul>
+            </div>
+        </div>
+
+        <!-- Performance, Summary, Notes, and Settings views remain the same but will be enhanced in JavaScript -->
+        <div id="performance-view" class="view">
+            <h1>Performance</h1>
+            <div class="perf-controls">
+                <select id="year-select" aria-label="Select year"></select>
+                <select id="month-select" aria-label="Select month"></select>
+            </div>
+            <div id="calendar-container">
+                <div id="calendar-grid"></div>
+                <div id="day-tooltip"></div>
+            </div>
+
+            <div id="chart-container">
+                <h3>Performance Over Time</h3>
+                <div class="chart-toggle">
+                    <button id="show-combined" class="active">Combined</button>
+                    <button id="show-concentration">Concentration</button>
+                    <button id="show-willpower">Willpower</button>
+                    <button id="show-individual">Individual</button>
+                </div>
+                
+                <div class="habit-selector" id="individual-habit-selector" style="display: none;">
+                    <select id="habit-select" aria-label="Select habit">
+                        <option value="">Select a habit</option>
+                    </select>
+                </div>
+                
+                <div class="perf-controls">
+                    <select id="chart-range-select" aria-label="Select chart range">
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">This Year</option>
+                    </select>
+                </div>
+                <div id="chart-svg-container">
+                    <div class="chart-tooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary, Notes, and Settings views remain structurally the same -->
+        <!-- ... existing summary, notes, and settings views ... -->
+
+    </div>
+    
+    <!-- Modals remain the same -->
+    <!-- ... existing modals ... -->
+
+    <div id="notification" class="notification">
+        <strong>Time to log your rituals!</strong>
+        <p>Don't forget to track your progress for today.</p>
+    </div>
+
+    <nav id="nav">
+        <button data-view="today-view" class="active" aria-label="Today">
+            <span class="nav-icon">📅</span>
+            <span>Today</span>
+        </button>
+        <button data-view="rituals-view" aria-label="Rituals">
+            <span class="nav-icon">📝</span>
+            <span>Rituals</span>
+        </button>
+        <button data-view="performance-view" aria-label="Performance">
+            <span class="nav-icon">📊</span>
+            <span>Performance</span>
+        </button>
+        <button data-view="summary-view" aria-label="Guide">
+            <span class="nav-icon">📚</span>
+            <span>Guide</span>
+        </button>
+        <button data-view="notes-view" aria-label="Notes">
+            <span class="nav-icon">📓</span>
+            <span>Notes</span>
+        </button>
+        <button data-view="settings-view" aria-label="Settings">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- ENHANCED STATE MANAGEMENT ---
+            let appData = {
+                rituals: { concentration: [], willpower: [] },
+                scores: {},
+                notes: {},
+                customNotes: [],
+                distractions: {}, // NEW: Store distractions by date
+                energyLevels: {}, // NEW: Store energy levels by date
+                settings: {
+                    reminders: {
+                        enabled: false,
+                        times: ["08:00", "20:00"] // NEW: Default morning/evening reminders
+                    },
+                    theme: "dark",
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    lockinPeriod: 30 // NEW: 30-day lock-in period
+                }
+            };
+
+            // NEW: Dandapani's teachings database
+            const teachings = [
+                {
+                    content: "The mind is a vast space and you are pure awareness traveling through it. Wherever your awareness goes, that area of the mind lights up.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "Concentration is the foundation upon which awareness can be built. Without it, your awareness will scatter like light through a broken lens.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "Willpower is the muscle that moves awareness. Exercise it daily through small, consistent acts of discipline.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "Your environment should support your focus, not fight it. Create spaces that minimize distractions and maximize concentration.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "The quality of your life is determined by where you place your awareness. Choose wisely, moment by moment.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "Practice doesn't make perfect. Perfect practice makes perfect. Be intentional with every repetition.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "Distractions are not the problem; your relationship with them is. Learn to notice without engaging.",
+                    author: "Dandapani"
+                },
+                {
+                    content: "Energy flows where attention goes. Direct your attention with purpose and watch your life transform.",
+                    author: "Dandapani"
+                }
+            ];
+
+            // NEW: Beginner ritual templates
+            const ritualTemplates = {
+                morning: [
+                    { name: "10-minute meditation", description: "Practice focused attention on your breath", type: "concentration", time: "morning" },
+                    { name: "Make your bed", description: "Start your day with order and discipline", type: "willpower", time: "morning" },
+                    { name: "Plan your day", description: "Set clear intentions for the day ahead", type: "concentration", time: "morning" },
+                    { name: "Hydrate with water", description: "Drink a glass of water upon waking", type: "willpower", time: "morning" }
+                ],
+                evening: [
+                    { name: "Gratitude journaling", description: "Write down three things you're grateful for", type: "concentration", time: "evening" },
+                    { name: "Daily reflection", description: "Review your day and lessons learned", type: "concentration", time: "evening" },
+                    { name: "Prepare for tomorrow", description: "Set up your environment for tomorrow's success", type: "willpower", time: "evening" },
+                    { name: "Digital detox", description: "No screens 1 hour before bed", type: "willpower", time: "evening" }
+                ],
+                focus: [
+                    { name: "Pomodoro sessions", description: "Work in focused 25-minute blocks", type: "concentration", time: "any" },
+                    { name: "Single-tasking practice", description: "Focus on one task at a time", type: "concentration", time: "any" },
+                    { name: "Breath awareness", description: "Return to breath when distracted", type: "concentration", time: "any" },
+                    { name: "Distraction logging", description: "Notice and record distractions", type: "willpower", time: "any" }
+                ]
+            };
+
+            // ... rest of your existing JavaScript code with enhancements for new features ...
+
+            // NEW: Initialize beginner templates
+            const initializeTemplates = () => {
+                const templateCards = document.querySelectorAll('.template-card');
+                templateCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        const template = card.dataset.template;
+                        if (confirm(`Add all ${template} rituals to your practice?`)) {
+                            addTemplateRituals(template);
+                        }
+                    });
+                });
+            };
+
+            // NEW: Add template rituals
+            const addTemplateRituals = (templateName) => {
+                const template = ritualTemplates[templateName];
+                template.forEach(ritual => {
+                    const newRitual = {
+                        id: Date.now() + Math.random(),
+                        name: ritual.name,
+                        description: ritual.description,
+                        time: ritual.time,
+                        createdAt: new Date().toISOString(),
+                        lockinDays: 0
+                    };
+                    
+                    appData.rituals[ritual.type].push(newRitual);
+                });
+                
+                saveData();
+                renderManageRitualsView();
+                showNotification(`${templateName.charAt(0).toUpperCase() + templateName.slice(1)} rituals added!`);
+            };
+
+            // NEW: Calculate lock-in progress
+            const calculateLockinProgress = (ritual) => {
+                if (!ritual.createdAt) return { days: 0, percent: 0 };
+                
+                const created = new Date(ritual.createdAt);
+                const today = new Date();
+                const diffTime = Math.abs(today - created);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                const daysCompleted = Math.min(diffDays, appData.settings.lockinPeriod);
+                const percent = (daysCompleted / appData.settings.lockinPeriod) * 100;
+                
+                return {
+                    days: daysCompleted,
+                    percent: percent
+                };
+            };
+
+            // NEW: Check if ritual is in lock-in period
+            const isInLockinPeriod = (ritual) => {
+                if (!ritual.createdAt) return false;
+                
+                const progress = calculateLockinProgress(ritual);
+                return progress.days < appData.settings.lockinPeriod;
+            };
+
+            // NEW: Calculate streaks
+            const calculateStreaks = () => {
+                const dates = Object.keys(appData.scores).sort();
+                let currentStreak = 0;
+                let longestStreak = 0;
+                let tempStreak = 0;
+                
+                const today = new Date();
+                let currentDate = new Date(today);
+                
+                // Check last 365 days for streaks
+                for (let i = 0; i < 365; i++) {
+                    const dateKey = formatDate(currentDate);
+                    const hasData = appData.scores[dateKey] && 
+                                   Object.values(appData.scores[dateKey]).some(score => score > 0);
+                    
+                    if (hasData) {
+                        tempStreak++;
+                        if (i === 0) currentStreak = tempStreak;
+                    } else {
+                        longestStreak = Math.max(longestStreak, tempStreak);
+                        tempStreak = 0;
+                    }
+                    
+                    currentDate.setDate(currentDate.getDate() - 1);
+                }
+                
+                longestStreak = Math.max(longestStreak, tempStreak);
+                
+                appData.settings.currentStreak = currentStreak;
+                appData.settings.longestStreak = Math.max(appData.settings.longestStreak, longestStreak);
+            };
+
+            // NEW: Update stats overview
+            const updateStatsOverview = () => {
+                calculateStreaks();
+                
+                document.getElementById('current-streak').textContent = appData.settings.currentStreak;
+                document.getElementById('longest-streak').textContent = appData.settings.longestStreak;
+                
+                // Calculate completion rate (last 7 days)
+                const last7Days = [];
+                const today = new Date();
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    last7Days.push(formatDate(date));
+                }
+                
+                const completedDays = last7Days.filter(date => 
+                    appData.scores[date] && Object.values(appData.scores[date]).some(score => score > 0)
+                ).length;
+                
+                const completionRate = Math.round((completedDays / 7) * 100);
+                document.getElementById('completion-rate').textContent = completionRate + '%';
+                
+                // Calculate lock-in progress
+                const allRituals = [...appData.rituals.concentration, ...appData.rituals.willpower];
+                const inLockin = allRituals.filter(ritual => isInLockinPeriod(ritual));
+                const totalProgress = inLockin.reduce((sum, ritual) => {
+                    const progress = calculateLockinProgress(ritual);
+                    return sum + progress.days;
+                }, 0);
+                
+                const totalPossible = inLockin.length * appData.settings.lockinPeriod;
+                const lockinProgress = totalPossible > 0 ? Math.round((totalProgress / totalPossible) * 100) : 100;
+                document.getElementById('lockin-progress').textContent = lockinProgress + '%';
+            };
+
+            // NEW: Daily teaching
+            const showDailyTeaching = () => {
+                const today = new Date();
+                const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+                const teachingIndex = dayOfYear % teachings.length;
+                const teaching = teachings[teachingIndex];
+                
+                document.getElementById('daily-teaching-content').textContent = teaching.content;
+                document.getElementById('daily-teaching-author').textContent = `- ${teaching.author}`;
+            };
+
+            // NEW: Energy tracking
+            const initializeEnergyTracking = () => {
+                const sliders = document.querySelectorAll('.energy-slider');
+                sliders.forEach(slider => {
+                    const valueDisplay = document.getElementById(slider.id.replace('energy', 'value'));
+                    
+                    slider.addEventListener('input', () => {
+                        valueDisplay.textContent = slider.value;
+                        
+                        // Save energy data
+                        const dateKey = formatDate(currentDate);
+                        if (!appData.energyLevels[dateKey]) {
+                            appData.energyLevels[dateKey] = {};
+                        }
+                        
+                        appData.energyLevels[dateKey][slider.id] = parseInt(slider.value);
+                        saveData();
+                    });
+                    
+                    // Load existing energy data
+                    const dateKey = formatDate(currentDate);
+                    if (appData.energyLevels[dateKey] && appData.energyLevels[dateKey][slider.id]) {
+                        slider.value = appData.energyLevels[dateKey][slider.id];
+                        valueDisplay.textContent = slider.value;
+                    }
+                });
+            };
+
+            // NEW: Distraction logging
+            const initializeDistractionLogging = () => {
+                const form = document.getElementById('distraction-form');
+                const ritualSelect = document.getElementById('distraction-ritual');
+                
+                // Populate ritual select
+                const allRituals = [...appData.rituals.concentration, ...appData.rituals.willpower];
+                ritualSelect.innerHTML = '<option value="">None</option>';
+                allRituals.forEach(ritual => {
+                    const option = document.createElement('option');
+                    option.value = ritual.id;
+                    option.textContent = ritual.name;
+                    ritualSelect.appendChild(option);
+                });
+                
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const type = document.getElementById('distraction-type').value;
+                    const trigger = document.getElementById('distraction-trigger').value;
+                    const ritualId = document.getElementById('distraction-ritual').value;
+                    
+                    if (type && trigger) {
+                        const distraction = {
+                            id: Date.now(),
+                            type: type,
+                            trigger: trigger,
+                            ritualId: ritualId || null,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        const dateKey = formatDate(currentDate);
+                        if (!appData.distractions[dateKey]) {
+                            appData.distractions[dateKey] = [];
+                        }
+                        
+                        appData.distractions[dateKey].push(distraction);
+                        saveData();
+                        renderDistractionList();
+                        
+                        // Reset form
+                        form.reset();
+                        showNotification('Distraction logged successfully');
+                    }
+                });
+            };
+
+            // NEW: Render distraction list
+            const renderDistractionList = () => {
+                const list = document.getElementById('distraction-list');
+                const dateKey = formatDate(currentDate);
+                const distractions = appData.distractions[dateKey] || [];
+                
+                if (distractions.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No distractions logged today</p>';
+                    return;
+                }
+                
+                list.innerHTML = distractions.map(distraction => {
+                    const time = new Date(distraction.timestamp).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    let ritualName = '';
+                    if (distraction.ritualId) {
+                        const allRituals = [...appData.rituals.concentration, ...appData.rituals.willpower];
+                        const ritual = allRituals.find(r => r.id == distraction.ritualId);
+                        ritualName = ritual ? ` • During: ${ritual.name}` : '';
+                    }
+                    
+                    return `
+                        <div class="distraction-item">
+                            <div class="distraction-header">
+                                <span class="distraction-type">${distraction.type.replace('-', ' ')}</span>
+                                <span class="distraction-time">${time}</span>
+                            </div>
+                            <div class="distraction-trigger">${distraction.trigger}${ritualName}</div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            // Enhanced ritual rendering with lock-in progress
+            const renderManageRitualsView = () => {
+                // Update average scores
+                const averages = calculateAverages();
+                concentrationAvg.textContent = averages.concentration.toFixed(2);
+                willpowerAvg.textContent = averages.willpower.toFixed(2);
+                combinedAvg.textContent = averages.combined.toFixed(2);
+                document.getElementById('longest-streak').textContent = appData.settings.longestStreak;
+
+                const renderList = (type, listElement) => {
+                    listElement.innerHTML = '';
+                    appData.rituals[type].forEach(ritual => {
+                        const li = document.createElement('li');
+                        const ritualHasScores = hasScores(ritual.id);
+                        const inLockin = isInLockinPeriod(ritual);
+                        li.className = `ritual-item manage-ritual-item ${ritualHasScores || inLockin ? 'locked' : ''}`;
+                        li.dataset.id = ritual.id; li.dataset.type = type;
+                        
+                        // Calculate lock-in progress
+                        const progress = calculateLockinProgress(ritual);
+                        
+                        let actionButtons = '';
+                        if (ritualHasScores || inLockin) {
+                            actionButtons = '<span style="color: var(--text-muted); font-size: 0.9rem;">Locked</span>';
+                        } else {
+                            actionButtons = '<div class="action-buttons"><button class="edit-btn" aria-label="Edit ritual">✏️</button><button class="delete-btn" aria-label="Delete ritual">🗑️</button></div>';
+                        }
+                        
+                        li.innerHTML = `
+                            <div>
+                                <p>${ritual.name}</p>
+                                ${ritual.description ? `<div class="ritual-description">${ritual.description}</div>` : ''}
+                                <div class="ritual-meta">
+                                    <span class="ritual-time ${ritual.time}">${ritual.time}</span>
+                                    ${inLockin ? `
+                                        <div class="lockin-progress">
+                                            <span>Day ${progress.days}/${appData.settings.lockinPeriod}</span>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: ${progress.percent}%"></div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            ${actionButtons}
+                        `;
+                        if (ritualHasScores || inLockin) {
+                            const lockedInfo = document.createElement('div');
+                            lockedInfo.className = 'locked-info';
+                            if (inLockin) {
+                                lockedInfo.textContent = `In ${appData.settings.lockinPeriod}-day lock-in period (${progress.days}/${appData.settings.lockinPeriod} days completed)`;
+                            } else {
+                                lockedInfo.textContent = 'This ritual has recorded scores and cannot be edited or deleted';
+                            }
+                            li.appendChild(lockedInfo);
+                        }
+                        listElement.appendChild(li);
+                    });
+                };
+                renderList('concentration', concentrationList);
+                renderList('willpower', willpowerList);
+            };
+
+            // Enhanced today view rendering with time of day
+            const renderTodayView = () => {
+                // ... existing today view code ...
+                
+                // Add time-based organization
+                const createRitualListHTML = (title, rituals, timeFilter = null) => {
+                    let filteredRituals = rituals;
+                    if (timeFilter) {
+                        filteredRituals = rituals.filter(r => r.time === timeFilter || r.time === 'any');
+                    }
+                    
+                    if (filteredRituals.length === 0) return '';
+                    
+                    let listHTML = `<h2>${title}</h2><ul class="ritual-list">`;
+                    filteredRituals.forEach(ritual => {
+                        const currentScore = appData.scores[dateKey]?.[ritual.id];
+                        const scoringDisabled = isFuture ? 'scoring-disabled' : '';
+                        const timeClass = ritual.time === 'morning' ? 'morning' : ritual.time === 'evening' ? 'evening' : '';
+                        const progress = calculateLockinProgress(ritual);
+                        
+                        listHTML += `
+                            <li class="ritual-item ${timeClass} ${scoringDisabled}" data-ritual-id="${ritual.id}">
+                                <div class="ritual-item-header">
+                                    <div>
+                                        <p>${ritual.name}</p>
+                                        ${ritual.description ? `<div class="ritual-description">${ritual.description}</div>` : ''}
+                                        ${isInLockinPeriod(ritual) ? `
+                                            <div class="lockin-progress">
+                                                <span>Day ${progress.days}/${appData.settings.lockinPeriod}</span>
+                                                <div class="progress-bar">
+                                                    <div class="progress-fill" style="width: ${progress.percent}%"></div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div class="scoring-buttons">
+                                    ${Object.keys(scoreMap).reverse().map(scoreKey => `<button class="score-btn ${currentScore == scoreKey ? 'selected' : ''}" data-score="${scoreKey}">${scoreKey == -1 ? 'N/A' : scoreKey}</button>`).join('')}
+                                </div>
+                                <div class="score-description">${currentScore !== undefined ? scoreMap[currentScore] : ''}</div>
+                            </li>`;
+                    });
+                    return listHTML + '</ul>';
+                };
+                
+                // Organize by time of day
+                const morningRituals = createRitualListHTML('🌅 Morning Rituals', [...appData.rituals.concentration, ...appData.rituals.willpower], 'morning');
+                const anyTimeRituals = createRitualListHTML('⏰ Any Time Rituals', [...appData.rituals.concentration, ...appData.rituals.willpower], 'any');
+                const eveningRituals = createRitualListHTML('🌙 Evening Rituals', [...appData.rituals.concentration, ...appData.rituals.willpower], 'evening');
+                
+                todayRitualsContainer.innerHTML = morningRituals + anyTimeRituals + eveningRituals;
+
+                if (!morningRituals && !anyTimeRituals && !eveningRituals) {
+                    todayRitualsContainer.innerHTML = `<div class="no-rituals-message">You have no rituals yet. Go to the 'Rituals' tab to add your first one!</div>`;
+                }
+                
+                // Update stats and initialize new features
+                updateStatsOverview();
+                showDailyTeaching();
+                initializeEnergyTracking();
+                initializeDistractionLogging();
+                renderDistractionList();
+            };
+
+            // Enhanced ritual adding with time of day
+            const addRitual = (type, nameInput, descriptionInput, timeSelect) => {
+                const name = nameInput.value.trim();
+                const description = descriptionInput.value.trim();
+                const time = timeSelect.value;
+                
+                if (name) {
+                    appData.rituals[type].push({ 
+                        id: Date.now() + Math.random(), 
+                        name,
+                        description,
+                        time,
+                        createdAt: new Date().toISOString(),
+                        lockinDays: 0
+                    });
+                    nameInput.value = '';
+                    descriptionInput.value = '';
+                    timeSelect.value = 'any';
+                    saveData();
+                    renderManageRitualsView();
+                }
+            };
+
+            // Initialize all new features
+            initializeTemplates();
+
+            // ... rest of your existing initialization code ...
+        });
+    </script>
+</body>
+</html>
