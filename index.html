@@ -1,0 +1,3016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ritual Tracker</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Ritual%20Tracker%22%2C%22short_name%22%3A%22Rituals%22%2C%22description%22%3A%22Master%20awareness%2C%20concentration%2C%20and%20willpower%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a1a1a%22%2C%22theme_color%22%3A%22%238B7355%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <meta name="theme-color" content="#8B7355">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --surface-color: #2c2c2c;
+            --primary-color: #8B7355;
+            --primary-hover: #6d5a43;
+            --text-color: #f0f0f0;
+            --text-muted: #888;
+            --border-color: #444;
+            --score-3: #4CAF50;
+            --score-2: #8BC34A;
+            --score-1: #FFC107;
+            --score-0: #F44336;
+            --score-na: #9E9E9E;
+            --accent-gold: #D4AF37;
+            --accent-earth: #795548;
+            --mindfulness-color: #2196F3;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f5f1e8;
+            --surface-color: #ffffff;
+            --primary-color: #8B7355;
+            --primary-hover: #6d5a43;
+            --text-color: #333333;
+            --text-muted: #666;
+            --border-color: #ddd;
+            --accent-gold: #D4AF37;
+            --accent-earth: #795548;
+            --mindfulness-color: #1976D2;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overscroll-behavior-y: contain;
+            transition: background-color 0.3s, color 0.3s;
+            line-height: 1.6;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            padding-bottom: 90px;
+        }
+
+        /* --- Navigation --- */
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--surface-color);
+            padding: 0.5rem 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        nav button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            flex-grow: 1;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 0 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-height: 50px;
+            justify-content: center;
+        }
+        
+        nav button.active {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+        
+        nav button:hover {
+            color: var(--primary-color);
+        }
+        
+        .nav-icon {
+            font-size: 1.2rem;
+        }
+
+        /* --- Views --- */
+        .view {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            margin-top: 2rem;
+            font-size: 1.3rem;
+            color: var(--accent-earth);
+        }
+
+        /* --- Today View --- */
+        .date-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .date-nav h1 { 
+            border-bottom: none; 
+            margin: 0; 
+            font-size: 1.3rem;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .date-nav button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .date-nav button:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .date-nav button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .ritual-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0;
+        }
+        
+        .ritual-item {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .ritual-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .ritual-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .ritual-item-header p { 
+            margin: 0; 
+            font-size: 1.1rem; 
+            font-weight: 600;
+            flex: 1;
+        }
+        
+        .scoring-buttons { 
+            display: flex; 
+            gap: 0.5rem; 
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .score-btn {
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            width: 44px; 
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .score-btn:hover { 
+            transform: scale(1.1); 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .score-btn.selected { 
+            color: white; 
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .score-btn[data-score="3"].selected { background-color: var(--score-3); border-color: var(--score-3); }
+        .score-btn[data-score="2"].selected { background-color: var(--score-2); border-color: var(--score-2); }
+        .score-btn[data-score="1"].selected { background-color: var(--score-1); border-color: var(--score-1); }
+        .score-btn[data-score="0"].selected { background-color: var(--score-0); border-color: var(--score-0); }
+        .score-btn[data-score="-1"].selected { background-color: var(--score-na); border-color: var(--score-na); }
+
+        .score-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+            min-height: 20px;
+            padding-top: 0.5rem;
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+        
+        .no-rituals-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            font-style: italic;
+        }
+        
+        /* --- Mindfulness Section --- */
+        .mindfulness-section {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--mindfulness-color);
+        }
+        
+        .mindfulness-section h3 {
+            margin-top: 0;
+            color: var(--mindfulness-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .mindfulness-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            text-align: center;
+            font-style: italic;
+        }
+        
+        .mindfulness-scoring {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .mindfulness-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .mindfulness-btn {
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .mindfulness-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .mindfulness-btn.selected {
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .mindfulness-btn[data-score="0"].selected { background-color: var(--score-0); border-color: var(--score-0); }
+        .mindfulness-btn[data-score="1"].selected { background-color: var(--score-1); border-color: var(--score-1); }
+        .mindfulness-btn[data-score="2"].selected { background-color: var(--score-2); border-color: var(--score-2); }
+        .mindfulness-btn[data-score="3"].selected { background-color: var(--score-3); border-color: var(--score-3); }
+        
+        .mindfulness-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        
+        .mindfulness-label {
+            flex: 1;
+            padding: 0 0.25rem;
+        }
+        
+        /* --- Notes Section --- */
+        .notes-section {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .notes-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .notes-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        /* --- Manage Rituals View --- */
+        .add-ritual-form { 
+            display: flex; 
+            gap: 1rem; 
+            margin-bottom: 1.5rem; 
+            background-color: var(--surface-color);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex-direction: column;
+        }
+        
+        @media (min-width: 480px) {
+            .add-ritual-form {
+                flex-direction: row;
+            }
+        }
+        
+        .form-input {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        .form-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            font-weight: 600;
+            min-height: 44px;
+        }
+        
+        .form-button:hover { 
+            background-color: var(--primary-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .manage-ritual-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 1.2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-left: 4px solid var(--accent-earth);
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        @media (min-width: 480px) {
+            .manage-ritual-item {
+                flex-direction: row;
+                gap: 0;
+            }
+        }
+        
+        .manage-ritual-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .manage-ritual-item .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .manage-ritual-item .action-buttons button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: color 0.3s;
+            border-radius: 4px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .manage-ritual-item .action-buttons button:hover {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+        
+        .manage-ritual-item.locked {
+            opacity: 0.7;
+            border-left: 4px solid var(--score-3);
+        }
+        
+        .locked-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-style: italic;
+            width: 100%;
+        }
+        
+        .ritual-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-style: italic;
+            width: 100%;
+        }
+        
+        .score-stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .stat-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            flex: 1;
+            min-width: 120px;
+            max-width: 200px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .concentration-stat .stat-value { color: var(--score-2); }
+        .willpower-stat .stat-value { color: var(--score-1); }
+        .mindfulness-stat .stat-value { color: var(--mindfulness-color); }
+        .combined-stat .stat-value { color: var(--primary-color); }
+
+        /* --- Performance View --- */
+        .perf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .perf-controls select, .perf-controls button {
+            padding: 0.75rem;
+            font-size: 1rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s;
+            min-height: 44px;
+        }
+        
+        .perf-controls select:focus, .perf-controls button:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .calendar-header { 
+            font-weight: bold; 
+            color: var(--text-muted); 
+            font-size: 0.7rem; 
+            padding-bottom: 0.5rem; 
+        }
+        
+        .calendar-day {
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background-color: var(--surface-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .calendar-day.empty { background-color: transparent; cursor: default; }
+        
+        .calendar-day.today { 
+            border: 2px solid var(--primary-color); 
+            font-weight: bold;
+        }
+        
+        .calendar-day.has-data:hover { 
+            border-color: var(--text-color); 
+            transform: scale(1.05);
+        }
+        
+        #day-tooltip {
+            position: fixed;
+            display: none;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 101;
+            font-size: 0.9rem;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 90vw;
+        }
+        
+        #chart-container {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        #chart-container h3 { 
+            text-align: center; 
+            margin-top: 0; 
+            color: var(--primary-color);
+        }
+        
+        #chart-svg-container {
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .chart-tooltip {
+            position: absolute;
+            display: none;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .chart-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .chart-toggle button {
+            padding: 0.75rem 1rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            min-height: 44px;
+            flex: 1;
+            min-width: 80px;
+        }
+        
+        .chart-toggle button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .chart-toggle button:hover:not(.active) {
+            background-color: rgba(139, 115, 85, 0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .habit-selector {
+            margin-bottom: 1.5rem;
+        }
+        
+        .habit-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .habit-selector select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+
+        /* --- Notes View --- */
+        .notes-view-container {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .notes-view-container h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .notes-list {
+            margin-top: 1.5rem;
+        }
+        
+        .note-item {
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s;
+        }
+        
+        .note-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .note-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+        
+        .note-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .note-content {
+            color: var(--text-color);
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        
+        .note-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        .note-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .note-action-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+        
+        .no-notes-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            font-style: italic;
+        }
+
+        /* --- Settings View --- */
+        .settings-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .settings-card h3 { 
+            margin-top: 0; 
+            color: var(--primary-color); 
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .settings-card p { 
+            color: var(--text-muted); 
+            font-size: 0.9rem; 
+            margin-bottom: 1rem;
+        }
+        
+        .settings-button { 
+            width: 100%; 
+            padding: 1rem; 
+            font-size: 1rem; 
+            margin-top: 0.5rem; 
+            min-height: 44px;
+        }
+        
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+        
+        .theme-toggle-label {
+            flex-grow: 1;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .reminder-settings {
+            margin-top: 1rem;
+        }
+        
+        .reminder-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .reminder-time {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .reminder-time input {
+            padding: 0.75rem;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: border-color 0.3s;
+            min-height: 44px;
+        }
+        
+        .reminder-time input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.2);
+        }
+        
+        .add-reminder-btn {
+            margin-top: 1rem;
+            width: 100%;
+        }
+        
+        .reminder-list {
+            margin-top: 1rem;
+        }
+        
+        .reminder-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .reminder-item button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .reminder-item button:hover {
+            color: var(--primary-color);
+            background-color: rgba(139, 115, 85, 0.1);
+        }
+
+        /* --- Summary View --- */
+        .summary-content {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .summary-section {
+            margin-bottom: 2rem;
+        }
+        
+        .summary-section h3 {
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .summary-section ul {
+            padding-left: 1.5rem;
+        }
+        
+        .summary-section li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .quote-box {
+            background-color: var(--bg-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            font-style: italic;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .concept-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+        }
+        
+        .concept-table th, .concept-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        
+        .concept-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .concept-table tr:nth-child(even) {
+            background-color: rgba(139, 115, 85, 0.05);
+        }
+
+        /* --- Modal --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000;
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center; 
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 1.5rem; 
+            border-radius: 12px;
+            width: 100%; 
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h2 { 
+            margin-top: 0; 
+            color: var(--primary-color);
+        }
+        
+        .modal-actions { 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 1rem; 
+            margin-top: 1.5rem; 
+        }
+        
+        .btn-secondary { 
+            background-color: var(--text-muted); 
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        /* --- Notification --- */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* --- Date Validation Styles --- */
+        .future-date-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 1rem;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
+        .scoring-disabled {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .scoring-disabled .score-btn {
+            background-color: var(--text-muted);
+            color: var(--bg-color);
+        }
+        
+        /* --- App Header --- */
+        .app-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .app-title {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 300;
+        }
+        
+        .app-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin: 0.5rem 0 0;
+            font-style: italic;
+        }
+        
+        /* --- Mobile Optimizations --- */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.8rem;
+                padding-bottom: 90px;
+            }
+            
+            h1 {
+                font-size: 1.4rem;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
+            }
+            
+            .date-nav h1 {
+                font-size: 1.1rem;
+            }
+            
+            .ritual-item {
+                padding: 1rem;
+            }
+            
+            .score-btn {
+                width: 40px;
+                height: 40px;
+                min-width: 40px;
+                min-height: 40px;
+            }
+            
+            .mindfulness-btn {
+                width: 40px;
+                height: 40px;
+                min-width: 40px;
+                min-height: 40px;
+            }
+            
+            .stat-card {
+                min-width: 100px;
+                padding: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .calendar-day {
+                height: 32px;
+                font-size: 0.75rem;
+            }
+            
+            .chart-toggle button {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .perf-controls {
+                gap: 0.3rem;
+            }
+            
+            .perf-controls select, .perf-controls button {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* --- Accessibility Improvements --- */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        button:focus-visible,
+        select:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* --- Install Prompt --- */
+        .install-prompt {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-color);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            border: 1px solid var(--primary-color);
+        }
+        
+        .install-prompt button {
+            margin: 0.5rem;
+        }
+
+        /* --- Backup Status --- */
+        .backup-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        
+        .backup-success {
+            color: var(--score-3);
+        }
+        
+        .backup-error {
+            color: var(--score-0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="app-header">
+            <h1 class="app-title">Ritual Tracker</h1>
+            <p class="app-subtitle">Master your awareness, concentration, and willpower</p>
+        </div>
+        
+        <!-- Install Prompt -->
+        <div id="install-prompt" class="install-prompt">
+            <p>Install Ritual Tracker for better experience?</p>
+            <button id="install-btn" class="form-button">Install</button>
+            <button id="cancel-install" class="form-button btn-secondary">Not Now</button>
+        </div>
+        
+        <div id="today-view" class="view active">
+            <div class="date-nav">
+                <button id="prev-day-btn" aria-label="Previous day">&lt;</button>
+                <h1 id="current-date-display"></h1>
+                <button id="next-day-btn" aria-label="Next day">&gt;</button>
+            </div>
+            <div id="date-validation-message"></div>
+            <div id="today-rituals-container"></div>
+            
+            <!-- Mindfulness Section -->
+            <div class="mindfulness-section">
+                <h3>Mindfulness Level</h3>
+                <div class="mindfulness-description">
+                    How present and aware were you throughout the day?
+                </div>
+                <div class="mindfulness-scoring">
+                    <div class="mindfulness-buttons">
+                        <button class="mindfulness-btn" data-score="0">0</button>
+                        <button class="mindfulness-btn" data-score="1">1</button>
+                        <button class="mindfulness-btn" data-score="2">2</button>
+                        <button class="mindfulness-btn" data-score="3">3</button>
+                    </div>
+                    <div class="mindfulness-labels">
+                        <div class="mindfulness-label">Never</div>
+                        <div class="mindfulness-label">Rarely</div>
+                        <div class="mindfulness-label">Often</div>
+                        <div class="mindfulness-label">Always</div>
+                    </div>
+                    <div class="score-description" id="mindfulness-description"></div>
+                </div>
+            </div>
+            
+            <div class="notes-section">
+                <h3>Daily Notes</h3>
+                <textarea id="daily-notes" class="notes-textarea" placeholder="Reflect on your day, note any insights, or track additional observations..."></textarea>
+            </div>
+        </div>
+
+        <div id="rituals-view" class="view">
+            <h1>Manage Rituals</h1>
+            
+            <!-- Score Statistics -->
+            <div class="score-stats">
+                <div class="stat-card concentration-stat">
+                    <div class="stat-value" id="concentration-avg">0.00</div>
+                    <div class="stat-label">Concentration Avg</div>
+                </div>
+                <div class="stat-card willpower-stat">
+                    <div class="stat-value" id="willpower-avg">0.00</div>
+                    <div class="stat-label">Willpower Avg</div>
+                </div>
+                <div class="stat-card mindfulness-stat">
+                    <div class="stat-value" id="mindfulness-avg">0.00</div>
+                    <div class="stat-label">Mindfulness Avg</div>
+                </div>
+                <div class="stat-card combined-stat">
+                    <div class="stat-value" id="combined-avg">0.00</div>
+                    <div class="stat-label">Overall Avg</div>
+                </div>
+            </div>
+            
+            <div id="concentration-rituals-manager">
+                <h2>Concentration</h2>
+                <form id="add-concentration-form" class="add-ritual-form">
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <input type="text" id="new-concentration-ritual" class="form-input" placeholder="New concentration ritual..." required aria-label="New concentration ritual">
+                        <input type="text" id="new-concentration-description" class="form-input" placeholder="Description (optional)" aria-label="Ritual description">
+                    </div>
+                    <button type="submit" class="form-button">Add</button>
+                </form>
+                <ul id="concentration-rituals-list" class="ritual-list"></ul>
+            </div>
+            <div id="willpower-rituals-manager">
+                <h2>Willpower</h2>
+                <form id="add-willpower-form" class="add-ritual-form">
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <input type="text" id="new-willpower-ritual" class="form-input" placeholder="New willpower ritual..." required aria-label="New willpower ritual">
+                        <input type="text" id="new-willpower-description" class="form-input" placeholder="Description (optional)" aria-label="Ritual description">
+                    </div>
+                    <button type="submit" class="form-button">Add</button>
+                </form>
+                <ul id="willpower-rituals-list" class="ritual-list"></ul>
+            </div>
+        </div>
+
+        <div id="performance-view" class="view">
+            <h1>Performance</h1>
+            <div class="perf-controls">
+                <select id="year-select" aria-label="Select year"></select>
+                <select id="month-select" aria-label="Select month"></select>
+            </div>
+            <div id="calendar-container">
+                <div id="calendar-grid"></div>
+                <div id="day-tooltip"></div>
+            </div>
+
+            <div id="chart-container">
+                <h3>Performance Over Time</h3>
+                <div class="chart-toggle">
+                    <button id="show-combined" class="active">Overall</button>
+                    <button id="show-concentration">Concentration</button>
+                    <button id="show-willpower">Willpower</button>
+                    <button id="show-mindfulness">Mindfulness</button>
+                    <button id="show-individual">Individual</button>
+                </div>
+                
+                <div class="habit-selector" id="individual-habit-selector" style="display: none;">
+                    <select id="habit-select" aria-label="Select habit">
+                        <option value="">Select a habit</option>
+                    </select>
+                </div>
+                
+                <div class="perf-controls">
+                    <select id="chart-range-select" aria-label="Select chart range">
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">This Year</option>
+                    </select>
+                </div>
+                <div id="chart-svg-container">
+                    <div class="chart-tooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="summary-view" class="view">
+            <h1>Focus & Willpower Guide</h1>
+            
+            <div class="summary-content">
+                <!-- Your existing summary content remains the same -->
+                <div class="summary-section">
+                    <h2>Overall Thesis</h2>
+                    <p>The ability to focus is the foundational skill for creating a life of purpose and joy. By understanding the mechanics of your mind and learning to control your awareness, you can direct your energy to manifest your goals, overcome mental ailments, and live a truly rewarding and present life. This is not achieved through hacks, but through consistent, patient practice.</p>
+                </div>
+                <!-- ... rest of your summary content ... -->
+            </div>
+        </div>
+
+        <!-- NOTES VIEW -->
+        <div id="notes-view" class="view">
+            <h1>My Notes</h1>
+            
+            <div class="notes-view-container">
+                <h3>Add New Note</h3>
+                <form id="add-note-form" class="add-ritual-form">
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <input type="text" id="new-note-title" class="form-input" placeholder="Note title..." required aria-label="Note title">
+                        <textarea id="new-note-content" class="notes-textarea" placeholder="Write your note here..." style="min-height: 150px;" required aria-label="Note content"></textarea>
+                    </div>
+                    <button type="submit" class="form-button">Save Note</button>
+                </form>
+            </div>
+            
+            <div class="notes-list" id="notes-list">
+                <!-- Notes will be added here dynamically -->
+            </div>
+        </div>
+
+        <div id="settings-view" class="view">
+            <h1>Settings</h1>
+            <div class="settings-card">
+                <h3>Theme</h3>
+                <div class="theme-toggle">
+                    <span class="theme-toggle-label">Dark Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle" aria-label="Toggle dark mode">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-card">
+                <h3>Daily Reminders</h3>
+                <p>Set reminders to log your ritual scores.</p>
+                <div class="reminder-settings">
+                    <div class="reminder-toggle">
+                        <span class="theme-toggle-label">Enable Reminders</span>
+                        <label class="switch">
+                            <input type="checkbox" id="reminder-toggle" aria-label="Enable reminders">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="reminder-list" id="reminder-list">
+                        <!-- Reminders will be added here dynamically -->
+                    </div>
+                    <div class="reminder-time">
+                        <input type="time" id="reminder-time" value="20:00" aria-label="Reminder time">
+                        <button id="add-reminder-btn" class="form-button add-reminder-btn">Add Reminder</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3>Daily Auto Backup</h3>
+                <p>Automatically backup your data daily at a specified time.</p>
+                <div class="reminder-settings">
+                    <div class="reminder-toggle">
+                        <span class="theme-toggle-label">Enable Auto Backup</span>
+                        <label class="switch">
+                            <input type="checkbox" id="auto-backup-toggle" aria-label="Enable auto backup">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="reminder-time">
+                        <input type="time" id="backup-time" value="23:00" aria-label="Backup time">
+                        <button id="backup-now-btn" class="form-button">Backup Now</button>
+                        <button id="backup-location-btn" class="form-button btn-secondary">Choose Folder</button>
+                    </div>
+                    <div id="backup-status" class="backup-status"></div>
+                </div>
+            </div>
+            
+            <div class="settings-card">
+                <h3>Backup Data (JSON)</h3>
+                <p>Download all your data including rituals, scores, and notes into a single JSON file.</p>
+                <button id="export-btn" class="form-button">Export as JSON</button>
+            </div>
+            <div class="settings-card">
+                <h3>Restore Data (JSON)</h3>
+                <p>Restore your data from a previously saved JSON backup file. Warning: This will overwrite all current data.</p>
+                <button id="import-btn" class="form-button btn-secondary">Import from JSON</button>
+                <input type="file" id="import-file" style="display:none;" accept=".json" aria-label="Import JSON file">
+            </div>
+        </div>
+    </div>
+    
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Ritual</h2>
+            <input type="text" id="edit-ritual-input" class="form-input" aria-label="Edit ritual name">
+            <textarea id="edit-ritual-description" class="notes-textarea" placeholder="Add a description for this ritual (optional)" style="margin-top: 1rem; min-height: 100px;"></textarea>
+            <div class="modal-actions">
+                <button id="cancel-edit-btn" class="form-button btn-secondary">Cancel</button>
+                <button id="save-edit-btn" class="form-button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-note-modal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Note</h2>
+            <input type="text" id="edit-note-title" class="form-input" aria-label="Edit note title">
+            <textarea id="edit-note-content" class="notes-textarea" placeholder="Edit your note here..." style="margin-top: 1rem; min-height: 150px;"></textarea>
+            <div class="modal-actions">
+                <button id="cancel-note-edit-btn" class="form-button btn-secondary">Cancel</button>
+                <button id="save-note-edit-btn" class="form-button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">
+        <strong>Time to log your rituals!</strong>
+        <p>Don't forget to track your progress for today.</p>
+    </div>
+
+    <nav id="nav">
+        <button data-view="today-view" class="active" aria-label="Today">
+            <span class="nav-icon">📅</span>
+            <span>Today</span>
+        </button>
+        <button data-view="rituals-view" aria-label="Rituals">
+            <span class="nav-icon">📝</span>
+            <span>Rituals</span>
+        </button>
+        <button data-view="performance-view" aria-label="Performance">
+            <span class="nav-icon">📊</span>
+            <span>Performance</span>
+        </button>
+        <button data-view="summary-view" aria-label="Guide">
+            <span class="nav-icon">📚</span>
+            <span>Guide</span>
+        </button>
+        <button data-view="notes-view" aria-label="Notes">
+            <span class="nav-icon">📓</span>
+            <span>Notes</span>
+        </button>
+        <button data-view="settings-view" aria-label="Settings">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            let appData = {
+                rituals: { concentration: [], willpower: [] },
+                scores: {},
+                mindfulness: {},
+                notes: {},
+                customNotes: [],
+                settings: {
+                    reminders: {
+                        enabled: false,
+                        times: ["20:00"]
+                    },
+                    theme: "dark",
+                    autoBackup: {
+                        enabled: false,
+                        time: "23:00"
+                    }
+                }
+            };
+
+            let currentDate = new Date();
+            let currentEditInfo = null;
+            let currentChartType = 'combined';
+            let selectedHabitId = null;
+            let reminderTimeouts = [];
+            let currentNoteEditId = null;
+            let backupTimeouts = [];
+            let backupDirectoryHandle = null;
+            
+            // PWA Install Prompt
+            let deferredPrompt;
+            
+            const scoreMap = {
+                '3': 'I performed this ritual extremely well.',
+                '2': 'I performed this ritual reasonably well.',
+                '1': 'I did not put much effort into this ritual.',
+                '0': 'I did not perform this ritual.',
+                '-1': 'I could not perform this ritual today due to unavoidable circumstances.'
+            };
+
+            const mindfulnessMap = {
+                '0': 'Never - Mind wandering frequently, not present',
+                '1': 'Rarely - Some awareness but easily distracted', 
+                '2': 'Often Mindful - Generally present with some lapses',
+                '3': 'Always - Fully present and aware throughout the day'
+            };
+
+            // --- DOM ELEMENTS ---
+            const views = document.querySelectorAll('.view');
+            const navButtons = document.querySelectorAll('nav button');
+            const dateDisplay = document.getElementById('current-date-display');
+            const prevDayBtn = document.getElementById('prev-day-btn');
+            const nextDayBtn = document.getElementById('next-day-btn');
+            const dateValidationMessage = document.getElementById('date-validation-message');
+            const todayRitualsContainer = document.getElementById('today-rituals-container');
+            const dailyNotes = document.getElementById('daily-notes');
+            const mindfulnessButtons = document.querySelectorAll('.mindfulness-btn');
+            const mindfulnessDescription = document.getElementById('mindfulness-description');
+            const addConcentrationForm = document.getElementById('add-concentration-form');
+            const newConcentrationInput = document.getElementById('new-concentration-ritual');
+            const newConcentrationDescription = document.getElementById('new-concentration-description');
+            const concentrationList = document.getElementById('concentration-rituals-list');
+            const addWillpowerForm = document.getElementById('add-willpower-form');
+            const newWillpowerInput = document.getElementById('new-willpower-ritual');
+            const newWillpowerDescription = document.getElementById('new-willpower-description');
+            const willpowerList = document.getElementById('willpower-rituals-list');
+            const editModal = document.getElementById('edit-modal');
+            const editInput = document.getElementById('edit-ritual-input');
+            const editDescription = document.getElementById('edit-ritual-description');
+            const saveEditBtn = document.getElementById('save-edit-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const yearSelect = document.getElementById('year-select');
+            const monthSelect = document.getElementById('month-select');
+            const calendarGrid = document.getElementById('calendar-grid');
+            const chartRangeSelect = document.getElementById('chart-range-select');
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn');
+            const importFile = document.getElementById('import-file');
+            const concentrationAvg = document.getElementById('concentration-avg');
+            const willpowerAvg = document.getElementById('willpower-avg');
+            const mindfulnessAvg = document.getElementById('mindfulness-avg');
+            const combinedAvg = document.getElementById('combined-avg');
+            const showCombinedBtn = document.getElementById('show-combined');
+            const showConcentrationBtn = document.getElementById('show-concentration');
+            const showWillpowerBtn = document.getElementById('show-willpower');
+            const showMindfulnessBtn = document.getElementById('show-mindfulness');
+            const showIndividualBtn = document.getElementById('show-individual');
+            const individualHabitSelector = document.getElementById('individual-habit-selector');
+            const habitSelect = document.getElementById('habit-select');
+            const themeToggle = document.getElementById('theme-toggle');
+            const reminderToggle = document.getElementById('reminder-toggle');
+            const reminderTime = document.getElementById('reminder-time');
+            const addReminderBtn = document.getElementById('add-reminder-btn');
+            const reminderList = document.getElementById('reminder-list');
+            const notification = document.getElementById('notification');
+            const addNoteForm = document.getElementById('add-note-form');
+            const newNoteTitle = document.getElementById('new-note-title');
+            const newNoteContent = document.getElementById('new-note-content');
+            const notesList = document.getElementById('notes-list');
+            const editNoteModal = document.getElementById('edit-note-modal');
+            const editNoteTitle = document.getElementById('edit-note-title');
+            const editNoteContent = document.getElementById('edit-note-content');
+            const saveNoteEditBtn = document.getElementById('save-note-edit-btn');
+            const cancelNoteEditBtn = document.getElementById('cancel-note-edit-btn');
+            const installPrompt = document.getElementById('install-prompt');
+            const installBtn = document.getElementById('install-btn');
+            const cancelInstall = document.getElementById('cancel-install');
+            const autoBackupToggle = document.getElementById('auto-backup-toggle');
+            const backupTime = document.getElementById('backup-time');
+            const backupNowBtn = document.getElementById('backup-now-btn');
+            const backupLocationBtn = document.getElementById('backup-location-btn');
+            const backupStatus = document.getElementById('backup-status');
+            
+            // --- UTILITY FUNCTIONS ---
+            const saveData = () => localStorage.setItem('ritualAppData', JSON.stringify(appData));
+            
+            const loadData = () => {
+                const data = localStorage.getItem('ritualAppData');
+                if (data) {
+                    appData = JSON.parse(data);
+                    if (!appData.settings) {
+                        appData.settings = {
+                            reminders: {
+                                enabled: false,
+                                times: ["20:00"]
+                            },
+                            theme: "dark",
+                            autoBackup: {
+                                enabled: false,
+                                time: "23:00"
+                            }
+                        };
+                    }
+                    if (!appData.notes) {
+                        appData.notes = {};
+                    }
+                    if (!appData.customNotes) {
+                        appData.customNotes = [];
+                    }
+                    if (!appData.mindfulness) {
+                        appData.mindfulness = {};
+                    }
+                    if (!appData.settings.reminders.times) {
+                        appData.settings.reminders.times = ["20:00"];
+                    }
+                    if (!appData.settings.autoBackup) {
+                        appData.settings.autoBackup = {
+                            enabled: false,
+                            time: "23:00"
+                        };
+                    }
+                } else {
+                    appData.rituals.concentration.push({ 
+                        id: Date.now(), 
+                        name: "Example: 10 mins meditation",
+                        description: "Practice focused attention on your breath for 10 minutes daily"
+                    });
+                    appData.rituals.willpower.push({ 
+                        id: Date.now() + 1, 
+                        name: "Example: Make my bed every morning",
+                        description: "Start your day with a small act of discipline and order"
+                    });
+                    appData.customNotes.push({
+                        id: Date.now() + 2,
+                        title: "Welcome to Notes",
+                        content: "This is your personal space for thoughts, ideas, and reflections. Add your own notes to track insights, ideas, or anything else you want to remember.",
+                        date: new Date().toISOString()
+                    });
+                }
+            };
+            
+            const formatDate = (date) => {
+                const d = new Date(date);
+                let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            };
+            
+            const getDisplayDate = (date) => {
+                const today = new Date(), yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                if (formatDate(date) === formatDate(today)) return "Today";
+                if (formatDate(date) === formatDate(yesterday)) return "Yesterday";
+                return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            };
+            
+            const isFutureDate = (date) => {
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                return date > today;
+            };
+
+            const hasScores = (ritualId) => {
+                for (const date in appData.scores) {
+                    if (appData.scores[date][ritualId] !== undefined) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            const calculateAverages = () => {
+                let concentrationTotal = 0, concentrationCount = 0;
+                let willpowerTotal = 0, willpowerCount = 0;
+                let mindfulnessTotal = 0, mindfulnessCount = 0;
+                
+                for (const date in appData.scores) {
+                    const dayScores = appData.scores[date];
+                    
+                    const concentrationScores = appData.rituals.concentration
+                        .map(r => dayScores[r.id])
+                        .filter(s => s !== undefined && s !== -1);
+                    
+                    if (concentrationScores.length > 0) {
+                        concentrationTotal += concentrationScores.reduce((a, b) => a + b, 0) / concentrationScores.length;
+                        concentrationCount++;
+                    }
+                    
+                    const willpowerScores = appData.rituals.willpower
+                        .map(r => dayScores[r.id])
+                        .filter(s => s !== undefined && s !== -1);
+                    
+                    if (willpowerScores.length > 0) {
+                        willpowerTotal += willpowerScores.reduce((a, b) => a + b, 0) / willpowerScores.length;
+                        willpowerCount++;
+                    }
+                }
+                
+                for (const date in appData.mindfulness) {
+                    const score = appData.mindfulness[date];
+                    if (score !== undefined && score !== null) {
+                        mindfulnessTotal += score;
+                        mindfulnessCount++;
+                    }
+                }
+                
+                const concentrationAvg = concentrationCount > 0 ? concentrationTotal / concentrationCount : 0;
+                const willpowerAvg = willpowerCount > 0 ? willpowerTotal / willpowerCount : 0;
+                const mindfulnessAvg = mindfulnessCount > 0 ? mindfulnessTotal / mindfulnessCount : 0;
+                const combinedAvg = (concentrationAvg + willpowerAvg + mindfulnessAvg) / 3;
+                
+                return {
+                    concentration: concentrationAvg,
+                    willpower: willpowerAvg,
+                    mindfulness: mindfulnessAvg,
+                    combined: combinedAvg
+                };
+            };
+
+            // --- PWA INSTALL PROMPT ---
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                setTimeout(() => {
+                    if (deferredPrompt) {
+                        installPrompt.style.display = 'block';
+                    }
+                }, 5000);
+            });
+
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        installPrompt.style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                }
+            });
+
+            cancelInstall.addEventListener('click', () => {
+                installPrompt.style.display = 'none';
+            });
+
+            window.addEventListener('appinstalled', () => {
+                installPrompt.style.display = 'none';
+                deferredPrompt = null;
+            });
+
+            // --- VIEW SWITCHING ---
+            const showView = (viewId) => {
+                views.forEach(view => view.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+                navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewId));
+
+                if (viewId === 'today-view') renderTodayView();
+                if (viewId === 'rituals-view') renderManageRitualsView();
+                if (viewId === 'performance-view') renderPerformanceView();
+                if (viewId === 'notes-view') renderNotesView();
+                if (viewId === 'settings-view') renderSettingsView();
+            };
+            
+            navButtons.forEach(button => button.addEventListener('click', () => showView(button.dataset.view)));
+
+            // --- TODAY VIEW LOGIC ---
+            const renderTodayView = () => {
+                dateDisplay.textContent = getDisplayDate(currentDate);
+                const dateKey = formatDate(currentDate);
+                todayRitualsContainer.innerHTML = '';
+                
+                if (appData.notes[dateKey]) {
+                    dailyNotes.value = appData.notes[dateKey];
+                } else {
+                    dailyNotes.value = '';
+                }
+                
+                const currentMindfulness = appData.mindfulness[dateKey];
+                mindfulnessButtons.forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (parseInt(btn.dataset.score) === currentMindfulness) {
+                        btn.classList.add('selected');
+                        mindfulnessDescription.textContent = mindfulnessMap[btn.dataset.score];
+                    }
+                });
+                if (currentMindfulness === undefined) {
+                    mindfulnessDescription.textContent = '';
+                }
+                
+                const isFuture = isFutureDate(currentDate);
+                
+                if (isFuture) {
+                    dateValidationMessage.innerHTML = `<div class="future-date-message">You cannot log scores for future dates. Please select today or a previous day.</div>`;
+                    nextDayBtn.disabled = true;
+                } else {
+                    dateValidationMessage.innerHTML = '';
+                    nextDayBtn.disabled = false;
+                }
+                
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                nextDayBtn.disabled = currentDate >= today;
+
+                const createRitualListHTML = (title, rituals) => {
+                    if (rituals.length === 0) return '';
+                    let listHTML = `<h2>${title}</h2><ul class="ritual-list">`;
+                    rituals.forEach(ritual => {
+                        const currentScore = appData.scores[dateKey]?.[ritual.id];
+                        const scoringDisabled = isFuture ? 'scoring-disabled' : '';
+                        listHTML += `
+                            <li class="ritual-item ${scoringDisabled}" data-ritual-id="${ritual.id}">
+                                <div class="ritual-item-header">
+                                    <div>
+                                        <p>${ritual.name}</p>
+                                        ${ritual.description ? `<div class="ritual-description">${ritual.description}</div>` : ''}
+                                    </div>
+                                </div>
+                                <div class="scoring-buttons">
+                                    ${Object.keys(scoreMap).reverse().map(scoreKey => `<button class="score-btn ${currentScore == scoreKey ? 'selected' : ''}" data-score="${scoreKey}">${scoreKey == -1 ? 'N/A' : scoreKey}</button>`).join('')}
+                                </div>
+                                <div class="score-description">${currentScore !== undefined ? scoreMap[currentScore] : ''}</div>
+                            </li>`;
+                    });
+                    return listHTML + '</ul>';
+                };
+                
+                const concentrationHTML = createRitualListHTML('Concentration', appData.rituals.concentration);
+                const willpowerHTML = createRitualListHTML('Willpower', appData.rituals.willpower);
+                todayRitualsContainer.innerHTML = concentrationHTML + willpowerHTML;
+
+                if (!concentrationHTML && !willpowerHTML) {
+                    todayRitualsContainer.innerHTML = `<div class="no-rituals-message">You have no rituals yet. Go to the 'Rituals' tab to add your first one!</div>`;
+                }
+            };
+            
+            dailyNotes.addEventListener('input', () => {
+                const dateKey = formatDate(currentDate);
+                if (dailyNotes.value.trim()) {
+                    appData.notes[dateKey] = dailyNotes.value;
+                } else {
+                    delete appData.notes[dateKey];
+                }
+                saveData();
+            });
+            
+            mindfulnessButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (isFutureDate(currentDate)) {
+                        alert("You cannot log scores for future dates. Please select today or a previous day.");
+                        return;
+                    }
+                    
+                    const score = parseInt(this.dataset.score, 10);
+                    const dateKey = formatDate(currentDate);
+                    
+                    if (this.classList.contains('selected')) {
+                        delete appData.mindfulness[dateKey];
+                        this.classList.remove('selected');
+                        mindfulnessDescription.textContent = '';
+                    } else {
+                        appData.mindfulness[dateKey] = score;
+                        mindfulnessButtons.forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        mindfulnessDescription.textContent = mindfulnessMap[score];
+                    }
+                    saveData();
+                });
+            });
+            
+            todayRitualsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('score-btn')) {
+                    if (isFutureDate(currentDate)) {
+                        alert("You cannot log scores for future dates. Please select today or a previous day.");
+                        return;
+                    }
+                    
+                    const score = parseInt(e.target.dataset.score, 10);
+                    const ritualItem = e.target.closest('.ritual-item');
+                    const ritualId = ritualItem.dataset.ritualId;
+                    const dateKey = formatDate(currentDate);
+                    
+                    if (!appData.scores[dateKey]) appData.scores[dateKey] = {};
+                    
+                    if (e.target.classList.contains('selected')) {
+                        delete appData.scores[dateKey][ritualId];
+                        e.target.classList.remove('selected');
+                        ritualItem.querySelector('.score-description').textContent = '';
+                    } else {
+                        appData.scores[dateKey][ritualId] = score;
+                        ritualItem.querySelectorAll('.score-btn').forEach(btn => btn.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        ritualItem.querySelector('.score-description').textContent = scoreMap[score];
+                    }
+                    saveData();
+                }
+            });
+            
+            prevDayBtn.addEventListener('click', () => { 
+                currentDate.setDate(currentDate.getDate() - 1); 
+                renderTodayView(); 
+            });
+            
+            nextDayBtn.addEventListener('click', () => { 
+                if (!isFutureDate(currentDate)) {
+                    currentDate.setDate(currentDate.getDate() + 1); 
+                    renderTodayView(); 
+                }
+            });
+
+            // --- MANAGE RITUALS VIEW LOGIC ---
+            const renderManageRitualsView = () => {
+                const averages = calculateAverages();
+                concentrationAvg.textContent = averages.concentration.toFixed(2);
+                willpowerAvg.textContent = averages.willpower.toFixed(2);
+                mindfulnessAvg.textContent = averages.mindfulness.toFixed(2);
+                combinedAvg.textContent = averages.combined.toFixed(2);
+
+                const renderList = (type, listElement) => {
+                    listElement.innerHTML = '';
+                    appData.rituals[type].forEach(ritual => {
+                        const li = document.createElement('li');
+                        const ritualHasScores = hasScores(ritual.id);
+                        li.className = `ritual-item manage-ritual-item ${ritualHasScores ? 'locked' : ''}`;
+                        li.dataset.id = ritual.id; li.dataset.type = type;
+                        
+                        let actionButtons = '';
+                        if (ritualHasScores) {
+                            actionButtons = '<span style="color: var(--text-muted); font-size: 0.9rem;">Locked (has scores)</span>';
+                        } else {
+                            actionButtons = '<div class="action-buttons"><button class="edit-btn" aria-label="Edit ritual">✏️</button><button class="delete-btn" aria-label="Delete ritual">🗑️</button></div>';
+                        }
+                        
+                        li.innerHTML = `
+                            <div>
+                                <p>${ritual.name}</p>
+                                ${ritual.description ? `<div class="ritual-description">${ritual.description}</div>` : ''}
+                            </div>
+                            ${actionButtons}
+                        `;
+                        if (ritualHasScores) {
+                            const lockedInfo = document.createElement('div');
+                            lockedInfo.className = 'locked-info';
+                            lockedInfo.textContent = 'This ritual has recorded scores and cannot be edited or deleted';
+                            li.appendChild(lockedInfo);
+                        }
+                        listElement.appendChild(li);
+                    });
+                };
+                renderList('concentration', concentrationList);
+                renderList('willpower', willpowerList);
+            };
+            
+            const addRitual = (type, nameInput, descriptionInput) => {
+                const name = nameInput.value.trim();
+                const description = descriptionInput.value.trim();
+                
+                if (name) {
+                    appData.rituals[type].push({ 
+                        id: Date.now() + Math.random(), 
+                        name,
+                        description
+                    });
+                    nameInput.value = '';
+                    descriptionInput.value = '';
+                    saveData();
+                    renderManageRitualsView();
+                }
+            };
+            
+            addConcentrationForm.addEventListener('submit', (e) => { 
+                e.preventDefault(); 
+                addRitual('concentration', newConcentrationInput, newConcentrationDescription); 
+            });
+            
+            addWillpowerForm.addEventListener('submit', (e) => { 
+                e.preventDefault(); 
+                addRitual('willpower', newWillpowerInput, newWillpowerDescription); 
+            });
+
+            const handleManageListClick = (e, listElement) => {
+                const item = e.target.closest('.manage-ritual-item');
+                if (!item) return;
+                const id = parseFloat(item.dataset.id);
+                const type = item.dataset.type;
+
+                if (hasScores(id)) {
+                    alert('This ritual has recorded scores and cannot be edited or deleted.');
+                    return;
+                }
+
+                if (e.target.classList.contains('delete-btn')) {
+                    if (confirm('Are you sure you want to delete this ritual?')) {
+                        appData.rituals[type] = appData.rituals[type].filter(r => r.id !== id);
+                        saveData();
+                        renderManageRitualsView();
+                    }
+                } else if (e.target.classList.contains('edit-btn')) {
+                    const ritual = appData.rituals[type].find(r => r.id === id);
+                    currentEditInfo = { id, type };
+                    editInput.value = ritual.name;
+                    editDescription.value = ritual.description || '';
+                    editModal.style.display = 'flex';
+                    editInput.focus();
+                }
+            };
+            
+            concentrationList.addEventListener('click', (e) => handleManageListClick(e));
+            willpowerList.addEventListener('click', (e) => handleManageListClick(e));
+            
+            saveEditBtn.addEventListener('click', () => {
+                if (currentEditInfo) {
+                    const { id, type } = currentEditInfo;
+                    const ritual = appData.rituals[type].find(r => r.id === id);
+                    ritual.name = editInput.value.trim();
+                    ritual.description = editDescription.value.trim();
+                    saveData();
+                    renderManageRitualsView();
+                    editModal.style.display = 'none';
+                    currentEditInfo = null;
+                }
+            });
+            
+            cancelEditBtn.addEventListener('click', () => { 
+                editModal.style.display = 'none'; 
+                currentEditInfo = null; 
+            });
+            
+            // --- PERFORMANCE VIEW LOGIC ---
+            const renderPerformanceView = () => {
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                yearSelect.innerHTML = '';
+                for (let i = currentYear; i >= currentYear - 5; i--) {
+                    yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
+                }
+                monthSelect.innerHTML = '';
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                monthNames.forEach((month, index) => {
+                    monthSelect.innerHTML += `<option value="${index}">${month}</option>`;
+                });
+                yearSelect.value = currentYear;
+                monthSelect.value = today.getMonth();
+                
+                yearSelect.addEventListener('change', renderCalendar);
+                monthSelect.addEventListener('change', renderCalendar);
+                chartRangeSelect.addEventListener('change', renderAreaChart);
+                
+                showCombinedBtn.addEventListener('click', () => {
+                    currentChartType = 'combined';
+                    updateChartButtons();
+                    renderAreaChart();
+                });
+                showConcentrationBtn.addEventListener('click', () => {
+                    currentChartType = 'concentration';
+                    updateChartButtons();
+                    renderAreaChart();
+                });
+                showWillpowerBtn.addEventListener('click', () => {
+                    currentChartType = 'willpower';
+                    updateChartButtons();
+                    renderAreaChart();
+                });
+                showMindfulnessBtn.addEventListener('click', () => {
+                    currentChartType = 'mindfulness';
+                    updateChartButtons();
+                    renderAreaChart();
+                });
+                showIndividualBtn.addEventListener('click', () => {
+                    currentChartType = 'individual';
+                    updateChartButtons();
+                    populateHabitSelector();
+                    renderAreaChart();
+                });
+                
+                habitSelect.addEventListener('change', () => {
+                    selectedHabitId = habitSelect.value;
+                    renderAreaChart();
+                });
+                
+                renderCalendar();
+                renderAreaChart();
+            };
+            
+            const updateChartButtons = () => {
+                showCombinedBtn.classList.toggle('active', currentChartType === 'combined');
+                showConcentrationBtn.classList.toggle('active', currentChartType === 'concentration');
+                showWillpowerBtn.classList.toggle('active', currentChartType === 'willpower');
+                showMindfulnessBtn.classList.toggle('active', currentChartType === 'mindfulness');
+                showIndividualBtn.classList.toggle('active', currentChartType === 'individual');
+                
+                individualHabitSelector.style.display = currentChartType === 'individual' ? 'block' : 'none';
+            };
+            
+            const populateHabitSelector = () => {
+                habitSelect.innerHTML = '<option value="">Select a habit</option>';
+                
+                appData.rituals.concentration.forEach(ritual => {
+                    habitSelect.innerHTML += `<option value="${ritual.id}">Concentration: ${ritual.name}</option>`;
+                });
+                
+                appData.rituals.willpower.forEach(ritual => {
+                    habitSelect.innerHTML += `<option value="${ritual.id}">Willpower: ${ritual.name}</option>`;
+                });
+                
+                habitSelect.innerHTML += `<option value="mindfulness">Mindfulness Level</option>`;
+                
+                if (!selectedHabitId && habitSelect.options.length > 1) {
+                    selectedHabitId = habitSelect.options[1].value;
+                    habitSelect.value = selectedHabitId;
+                }
+            };
+            
+            const renderCalendar = () => {
+                const year = parseInt(yearSelect.value);
+                const month = parseInt(monthSelect.value);
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const firstDayOfWeek = firstDay.getDay();
+                
+                calendarGrid.innerHTML = '';
+                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+                    const header = document.createElement('div');
+                    header.className = 'calendar-header';
+                    header.textContent = day;
+                    calendarGrid.appendChild(header);
+                });
+                
+                for (let i = 0; i < firstDayOfWeek; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'calendar-day empty';
+                    calendarGrid.appendChild(emptyDay);
+                }
+                
+                const today = new Date();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'calendar-day';
+                    dayElement.textContent = day;
+                    
+                    const date = new Date(year, month, day);
+                    const dateKey = formatDate(date);
+                    const hasRitualData = appData.scores[dateKey] && Object.keys(appData.scores[dateKey]).length > 0;
+                    const hasMindfulnessData = appData.mindfulness[dateKey] !== undefined;
+                    const hasData = hasRitualData || hasMindfulnessData;
+                    
+                    if (hasData) {
+                        dayElement.classList.add('has-data');
+                        const avgScore = calculateDayAverage(dateKey);
+                        dayElement.style.backgroundColor = getScoreColor(avgScore);
+                        dayElement.dataset.date = dateKey;
+                        dayElement.dataset.score = avgScore;
+                        dayElement.addEventListener('mouseover', showDayTooltip);
+                        dayElement.addEventListener('mouseout', hideDayTooltip);
+                    }
+                    
+                    if (formatDate(date) === formatDate(today)) {
+                        dayElement.classList.add('today');
+                    }
+                    
+                    calendarGrid.appendChild(dayElement);
+                }
+            };
+            
+            const calculateDayAverage = (dateKey) => {
+                const dayScores = appData.scores[dateKey] || {};
+                const validRitualScores = Object.values(dayScores).filter(score => score !== -1);
+                const mindfulnessScore = appData.mindfulness[dateKey];
+                
+                let total = 0;
+                let count = 0;
+                
+                if (validRitualScores.length > 0) {
+                    total += validRitualScores.reduce((sum, score) => sum + score, 0);
+                    count += validRitualScores.length;
+                }
+                
+                if (mindfulnessScore !== undefined && mindfulnessScore !== null) {
+                    total += mindfulnessScore;
+                    count += 1;
+                }
+                
+                if (count === 0) return null;
+                
+                return total / count;
+            };
+            
+            const getScoreColor = (score) => {
+                if (score === null) return '';
+                if (score >= 2.5) return 'var(--score-3)';
+                if (score >= 1.5) return 'var(--score-2)';
+                if (score >= 0.5) return 'var(--score-1)';
+                return 'var(--score-0)';
+            };
+            
+            const showDayTooltip = (e) => {
+                const tooltip = document.getElementById('day-tooltip');
+                const date = e.target.dataset.date;
+                const score = e.target.dataset.score;
+                
+                if (date && score) {
+                    const dayScores = appData.scores[date] || {};
+                    const mindfulnessScore = appData.mindfulness[date];
+                    
+                    let tooltipHTML = `<strong>${new Date(date).toLocaleDateString()}</strong><br>`;
+                    tooltipHTML += `Average: ${parseFloat(score).toFixed(2)}<br><br>`;
+                    
+                    for (const ritualId in dayScores) {
+                        const ritual = [...appData.rituals.concentration, ...appData.rituals.willpower]
+                            .find(r => r.id == ritualId);
+                        if (ritual) {
+                            const scoreValue = dayScores[ritualId];
+                            const scoreText = scoreValue === -1 ? 'N/A' : scoreValue;
+                            tooltipHTML += `${ritual.name}: ${scoreText}<br>`;
+                        }
+                    }
+                    
+                    if (mindfulnessScore !== undefined) {
+                        tooltipHTML += `Mindfulness: ${mindfulnessScore}<br>`;
+                    }
+                    
+                    tooltip.innerHTML = tooltipHTML;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = e.pageX + 'px';
+                    tooltip.style.top = (e.pageY - tooltip.offsetHeight - 10) + 'px';
+                }
+            };
+            
+            const hideDayTooltip = () => {
+                document.getElementById('day-tooltip').style.display = 'none';
+            };
+            
+            const renderAreaChart = () => {
+                const chartContainer = document.getElementById('chart-svg-container');
+                chartContainer.innerHTML = '';
+                
+                const range = parseInt(chartRangeSelect.value);
+                const today = new Date();
+                const startDate = new Date();
+                startDate.setDate(today.getDate() - range);
+                
+                const data = [];
+                for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                    const dateKey = formatDate(d);
+                    data.push({
+                        date: new Date(d),
+                        dateKey,
+                        score: getScoreForChart(dateKey)
+                    });
+                }
+                
+                const filteredData = data.filter(d => d.score !== null);
+                
+                if (filteredData.length === 0) {
+                    chartContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No data available for the selected period</p>';
+                    return;
+                }
+                
+                const width = Math.max(chartContainer.clientWidth, 300);
+                const height = 300;
+                const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+                const innerWidth = width - margin.left - margin.right;
+                const innerHeight = height - margin.top - margin.bottom;
+                
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '100%');
+                svg.setAttribute('height', height);
+                svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+                svg.appendChild(g);
+                
+                const tooltip = document.querySelector('.chart-tooltip');
+                
+                const xScale = d => {
+                    const minDate = new Date(Math.min(...filteredData.map(d => d.date)));
+                    const maxDate = new Date(Math.max(...filteredData.map(d => d.date)));
+                    const dateRange = maxDate - minDate;
+                    return ((d.date - minDate) / dateRange) * innerWidth;
+                };
+                
+                const yScale = d => innerHeight - (d.score / 3) * innerHeight;
+                
+                const getChartColor = () => {
+                    switch(currentChartType) {
+                        case 'concentration': return 'var(--score-2)';
+                        case 'willpower': return 'var(--score-1)';
+                        case 'mindfulness': return 'var(--mindfulness-color)';
+                        default: return 'var(--primary-color)';
+                    }
+                };
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                let pathData = `M ${xScale(filteredData[0])} ${yScale(filteredData[0])}`;
+                for (let i = 1; i < filteredData.length; i++) {
+                    pathData += ` L ${xScale(filteredData[i])} ${yScale(filteredData[i])}`;
+                }
+                line.setAttribute('d', pathData);
+                line.setAttribute('fill', 'none');
+                line.setAttribute('stroke', getChartColor());
+                line.setAttribute('stroke-width', '2');
+                g.appendChild(line);
+                
+                filteredData.forEach(point => {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', xScale(point));
+                    circle.setAttribute('cy', yScale(point));
+                    circle.setAttribute('r', '4');
+                    circle.setAttribute('fill', getChartColor());
+                    circle.setAttribute('data-date', point.dateKey);
+                    circle.setAttribute('data-score', point.score);
+                    
+                    circle.addEventListener('mouseover', (e) => {
+                        const rect = svg.getBoundingClientRect();
+                        tooltip.innerHTML = `
+                            <strong>${new Date(point.dateKey).toLocaleDateString()}</strong><br>
+                            Score: ${point.score.toFixed(2)}
+                        `;
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+                        tooltip.style.top = (e.clientY - rect.top - 30) + 'px';
+                    });
+                    
+                    circle.addEventListener('mouseout', () => {
+                        tooltip.style.display = 'none';
+                    });
+                    
+                    g.appendChild(circle);
+                });
+                
+                const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                xAxis.setAttribute('x1', 0);
+                xAxis.setAttribute('y1', innerHeight);
+                xAxis.setAttribute('x2', innerWidth);
+                xAxis.setAttribute('y2', innerHeight);
+                xAxis.setAttribute('stroke', 'var(--border-color)');
+                xAxis.setAttribute('stroke-width', '1');
+                g.appendChild(xAxis);
+                
+                const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                yAxis.setAttribute('x1', 0);
+                yAxis.setAttribute('y1', 0);
+                yAxis.setAttribute('x2', 0);
+                yAxis.setAttribute('y2', innerHeight);
+                yAxis.setAttribute('stroke', 'var(--border-color)');
+                yAxis.setAttribute('stroke-width', '1');
+                g.appendChild(yAxis);
+                
+                [0, 1, 2, 3].forEach(score => {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', -30);
+                    text.setAttribute('y', innerHeight - (score / 3) * innerHeight);
+                    text.setAttribute('fill', 'var(--text-color)');
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('text-anchor', 'end');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.textContent = score;
+                    g.appendChild(text);
+                });
+                
+                chartContainer.appendChild(svg);
+            };
+            
+            const getScoreForChart = (dateKey) => {
+                if (currentChartType === 'combined') {
+                    const dayScores = appData.scores[dateKey] || {};
+                    const validRitualScores = Object.values(dayScores).filter(score => score !== -1);
+                    const mindfulnessScore = appData.mindfulness[dateKey];
+                    
+                    let total = 0;
+                    let count = 0;
+                    
+                    if (validRitualScores.length > 0) {
+                        total += validRitualScores.reduce((sum, score) => sum + score, 0);
+                        count += validRitualScores.length;
+                    }
+                    
+                    if (mindfulnessScore !== undefined && mindfulnessScore !== null) {
+                        total += mindfulnessScore;
+                        count += 1;
+                    }
+                    
+                    if (count === 0) return null;
+                    return total / count;
+                } 
+                else if (currentChartType === 'concentration') {
+                    const dayScores = appData.scores[dateKey] || {};
+                    const concentrationScores = appData.rituals.concentration
+                        .map(r => dayScores[r.id])
+                        .filter(s => s !== undefined && s !== -1);
+                    if (concentrationScores.length === 0) return null;
+                    return concentrationScores.reduce((sum, score) => sum + score, 0) / concentrationScores.length;
+                }
+                else if (currentChartType === 'willpower') {
+                    const dayScores = appData.scores[dateKey] || {};
+                    const willpowerScores = appData.rituals.willpower
+                        .map(r => dayScores[r.id])
+                        .filter(s => s !== undefined && s !== -1);
+                    if (willpowerScores.length === 0) return null;
+                    return willpowerScores.reduce((sum, score) => sum + score, 0) / willpowerScores.length;
+                }
+                else if (currentChartType === 'mindfulness') {
+                    const score = appData.mindfulness[dateKey];
+                    return score !== undefined && score !== null ? score : null;
+                }
+                else if (currentChartType === 'individual' && selectedHabitId) {
+                    if (selectedHabitId === 'mindfulness') {
+                        const score = appData.mindfulness[dateKey];
+                        return score !== undefined && score !== null ? score : null;
+                    } else {
+                        const dayScores = appData.scores[dateKey] || {};
+                        const score = dayScores[selectedHabitId];
+                        return score !== undefined && score !== -1 ? score : null;
+                    }
+                }
+                
+                return null;
+            };
+
+            // --- NOTES VIEW LOGIC ---
+            const renderNotesView = () => {
+                notesList.innerHTML = '';
+                
+                if (appData.customNotes.length === 0) {
+                    notesList.innerHTML = '<div class="no-notes-message">You have no notes yet. Add your first note above!</div>';
+                    return;
+                }
+                
+                const sortedNotes = [...appData.customNotes].sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                sortedNotes.forEach(note => {
+                    const noteElement = document.createElement('div');
+                    noteElement.className = 'note-item';
+                    noteElement.dataset.id = note.id;
+                    
+                    const date = new Date(note.date);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    noteElement.innerHTML = `
+                        <div class="note-header">
+                            <div class="note-title">${note.title}</div>
+                            <div class="note-date">${formattedDate}</div>
+                        </div>
+                        <div class="note-content">${note.content}</div>
+                        <div class="note-actions">
+                            <button class="note-action-btn edit-note-btn" aria-label="Edit note">✏️ Edit</button>
+                            <button class="note-action-btn delete-note-btn" aria-label="Delete note">🗑️ Delete</button>
+                        </div>
+                    `;
+                    
+                    notesList.appendChild(noteElement);
+                });
+                
+                document.querySelectorAll('.edit-note-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const noteItem = e.target.closest('.note-item');
+                        const noteId = parseFloat(noteItem.dataset.id);
+                        const note = appData.customNotes.find(n => n.id === noteId);
+                        
+                        if (note) {
+                            currentNoteEditId = noteId;
+                            editNoteTitle.value = note.title;
+                            editNoteContent.value = note.content;
+                            editNoteModal.style.display = 'flex';
+                            editNoteTitle.focus();
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.delete-note-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const noteItem = e.target.closest('.note-item');
+                        const noteId = parseFloat(noteItem.dataset.id);
+                        
+                        if (confirm('Are you sure you want to delete this note?')) {
+                            appData.customNotes = appData.customNotes.filter(n => n.id !== noteId);
+                            saveData();
+                            renderNotesView();
+                        }
+                    });
+                });
+            };
+            
+            addNoteForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const title = newNoteTitle.value.trim();
+                const content = newNoteContent.value.trim();
+                
+                if (title && content) {
+                    const newNote = {
+                        id: Date.now() + Math.random(),
+                        title,
+                        content,
+                        date: new Date().toISOString()
+                    };
+                    
+                    appData.customNotes.push(newNote);
+                    saveData();
+                    
+                    newNoteTitle.value = '';
+                    newNoteContent.value = '';
+                    
+                    renderNotesView();
+                    
+                    showNotification('Note saved successfully!');
+                }
+            });
+            
+            saveNoteEditBtn.addEventListener('click', () => {
+                if (currentNoteEditId) {
+                    const note = appData.customNotes.find(n => n.id === currentNoteEditId);
+                    
+                    if (note) {
+                        note.title = editNoteTitle.value.trim();
+                        note.content = editNoteContent.value.trim();
+                        note.date = new Date().toISOString();
+                        
+                        saveData();
+                        renderNotesView();
+                        editNoteModal.style.display = 'none';
+                        currentNoteEditId = null;
+                        
+                        showNotification('Note updated successfully!');
+                    }
+                }
+            });
+            
+            cancelNoteEditBtn.addEventListener('click', () => {
+                editNoteModal.style.display = 'none';
+                currentNoteEditId = null;
+            });
+
+            // --- SETTINGS VIEW LOGIC ---
+            const renderReminderList = () => {
+                reminderList.innerHTML = '';
+                
+                if (appData.settings.reminders.times.length === 0) {
+                    reminderList.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No reminders set</p>';
+                    return;
+                }
+                
+                appData.settings.reminders.times.forEach((time, index) => {
+                    const reminderItem = document.createElement('div');
+                    reminderItem.className = 'reminder-item';
+                    reminderItem.innerHTML = `
+                        <span>${time}</span>
+                        <button class="delete-reminder" data-index="${index}">🗑️</button>
+                    `;
+                    reminderList.appendChild(reminderItem);
+                });
+                
+                document.querySelectorAll('.delete-reminder').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        appData.settings.reminders.times.splice(index, 1);
+                        saveData();
+                        renderReminderList();
+                        setupReminders();
+                    });
+                });
+            };
+            
+            const renderSettingsView = () => {
+                themeToggle.checked = appData.settings.theme === 'light';
+                reminderToggle.checked = appData.settings.reminders.enabled;
+                autoBackupToggle.checked = appData.settings.autoBackup.enabled;
+                backupTime.value = appData.settings.autoBackup.time;
+                
+                renderReminderList();
+                
+                themeToggle.addEventListener('change', () => {
+                    appData.settings.theme = themeToggle.checked ? 'light' : 'dark';
+                    saveData();
+                    applyTheme(appData.settings.theme);
+                });
+                
+                reminderToggle.addEventListener('change', () => {
+                    appData.settings.reminders.enabled = reminderToggle.checked;
+                    saveData();
+                    setupReminders();
+                });
+                
+                addReminderBtn.addEventListener('click', () => {
+                    const time = reminderTime.value;
+                    if (time && !appData.settings.reminders.times.includes(time)) {
+                        appData.settings.reminders.times.push(time);
+                        saveData();
+                        renderReminderList();
+                        setupReminders();
+                    }
+                });
+                
+                autoBackupToggle.addEventListener('change', () => {
+                    appData.settings.autoBackup.enabled = autoBackupToggle.checked;
+                    saveData();
+                    setupAutoBackup();
+                    updateBackupStatus();
+                });
+                
+                backupTime.addEventListener('change', () => {
+                    appData.settings.autoBackup.time = backupTime.value;
+                    saveData();
+                    setupAutoBackup();
+                });
+                
+                backupNowBtn.addEventListener('click', () => {
+                    performAutoBackup();
+                });
+                
+                backupLocationBtn.addEventListener('click', () => {
+                    requestBackupFolder();
+                });
+                
+                updateBackupStatus();
+            };
+            
+            // --- EXPORT/IMPORT FUNCTIONS ---
+            const exportToJSON = () => {
+                const exportData = {
+                    rituals: appData.rituals,
+                    scores: appData.scores,
+                    mindfulness: appData.mindfulness,
+                    notes: appData.notes,
+                    customNotes: appData.customNotes,
+                    settings: appData.settings,
+                    exportDate: new Date().toISOString(),
+                    version: "1.0"
+                };
+                
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ritual-tracker-backup-${formatDate(new Date())}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('Data exported successfully!');
+            };
+            
+            const importFromJSON = (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        if (!importedData.rituals || !importedData.scores || !importedData.notes || !importedData.customNotes) {
+                            throw new Error('Invalid backup file format');
+                        }
+                        
+                        appData.rituals = importedData.rituals;
+                        appData.scores = importedData.scores;
+                        appData.notes = importedData.notes;
+                        appData.customNotes = importedData.customNotes;
+                        appData.mindfulness = importedData.mindfulness || {};
+                        
+                        if (importedData.settings) {
+                            appData.settings = { ...appData.settings, ...importedData.settings };
+                        }
+                        
+                        saveData();
+                        
+                        renderTodayView();
+                        renderManageRitualsView();
+                        renderPerformanceView();
+                        renderNotesView();
+                        renderSettingsView();
+                        
+                        showNotification('Data imported successfully!');
+                    } catch (error) {
+                        alert('Error importing data: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            // --- DAILY BACKUP SYSTEM ---
+            const setupAutoBackup = () => {
+                backupTimeouts.forEach(timeout => clearTimeout(timeout));
+                backupTimeouts = [];
+                
+                if (!appData.settings.autoBackup.enabled) {
+                    return;
+                }
+                
+                const [hours, minutes] = appData.settings.autoBackup.time.split(':').map(Number);
+                const now = new Date();
+                const backupTime = new Date();
+                backupTime.setHours(hours, minutes, 0, 0);
+                
+                if (backupTime <= now) {
+                    backupTime.setDate(backupTime.getDate() + 1);
+                }
+                
+                const timeUntilBackup = backupTime.getTime() - now.getTime();
+                
+                const timeout = setTimeout(() => {
+                    performAutoBackup();
+                    setupAutoBackup();
+                }, timeUntilBackup);
+                
+                backupTimeouts.push(timeout);
+                
+                updateBackupStatus();
+            };
+            
+            const performAutoBackup = async () => {
+                try {
+                    const exportData = {
+                        rituals: appData.rituals,
+                        scores: appData.scores,
+                        mindfulness: appData.mindfulness,
+                        notes: appData.notes,
+                        customNotes: appData.customNotes,
+                        settings: appData.settings,
+                        exportDate: new Date().toISOString(),
+                        version: "1.0",
+                        autoBackup: true
+                    };
+                    
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    
+                    if (backupDirectoryHandle) {
+                        try {
+                            const fileName = `ritual-tracker-auto-backup-${formatDate(new Date())}.json`;
+                            const fileHandle = await backupDirectoryHandle.getFileHandle(fileName, { create: true });
+                            const writable = await fileHandle.createWritable();
+                            await writable.write(blob);
+                            await writable.close();
+                            
+                            showNotification('Daily automatic backup completed to selected folder!');
+                            updateBackupStatus('Last backup: ' + new Date().toLocaleString(), 'backup-success');
+                        } catch (error) {
+                            console.error('Error saving to folder:', error);
+                            fallbackDownload(blob);
+                        }
+                    } else {
+                        fallbackDownload(blob);
+                    }
+                } catch (error) {
+                    console.error('Backup error:', error);
+                    updateBackupStatus('Backup failed: ' + error.message, 'backup-error');
+                }
+            };
+            
+            const fallbackDownload = (blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ritual-tracker-auto-backup-${formatDate(new Date())}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('Daily automatic backup completed!');
+                updateBackupStatus('Last backup: ' + new Date().toLocaleString(), 'backup-success');
+            };
+            
+            const requestBackupFolder = async () => {
+                if ('showDirectoryPicker' in window) {
+                    try {
+                        backupDirectoryHandle = await window.showDirectoryPicker();
+                        updateBackupStatus('Backup folder selected: ' + backupDirectoryHandle.name, 'backup-success');
+                        showNotification('Backup folder selected. Auto-backups will be saved here when enabled.');
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            updateBackupStatus('Failed to select folder', 'backup-error');
+                        }
+                    }
+                } else {
+                    updateBackupStatus('File System Access API not supported in this browser', 'backup-error');
+                    showNotification('File System Access API not supported. Backups will download normally.');
+                }
+            };
+            
+            const updateBackupStatus = (message = '', className = '') => {
+                if (!message) {
+                    if (appData.settings.autoBackup.enabled) {
+                        message = 'Auto backup enabled - next backup today at ' + appData.settings.autoBackup.time;
+                        className = 'backup-success';
+                    } else {
+                        message = 'Auto backup disabled';
+                        className = '';
+                    }
+                }
+                backupStatus.textContent = message;
+                backupStatus.className = 'backup-status ' + className;
+            };
+            
+            // --- REMINDER SYSTEM ---
+            const setupReminders = () => {
+                reminderTimeouts.forEach(timeout => clearTimeout(timeout));
+                reminderTimeouts = [];
+                
+                if (!appData.settings.reminders.enabled) {
+                    return;
+                }
+                
+                appData.settings.reminders.times.forEach(time => {
+                    const [hours, minutes] = time.split(':').map(Number);
+                    const now = new Date();
+                    const reminderTime = new Date();
+                    reminderTime.setHours(hours, minutes, 0, 0);
+                    
+                    if (reminderTime <= now) {
+                        reminderTime.setDate(reminderTime.getDate() + 1);
+                    }
+                    
+                    const timeUntilReminder = reminderTime.getTime() - now.getTime();
+                    
+                    const timeout = setTimeout(() => {
+                        showReminder();
+                        setupReminders();
+                    }, timeUntilReminder);
+                    
+                    reminderTimeouts.push(timeout);
+                });
+            };
+            
+            const showReminder = () => {
+                const todayKey = formatDate(new Date());
+                const hasLoggedToday = (appData.scores[todayKey] && Object.keys(appData.scores[todayKey]).length > 0) || 
+                                      appData.mindfulness[todayKey] !== undefined;
+                
+                if (!hasLoggedToday) {
+                    showNotification("Time to log your rituals and mindfulness! Don't forget to track your progress for today.");
+                }
+            };
+            
+            const showNotification = (message) => {
+                notification.innerHTML = `<strong>Notification</strong><p>${message}</p>`;
+                notification.style.display = 'block';
+                
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 10000);
+            };
+            
+            notification.addEventListener('click', () => {
+                notification.style.display = 'none';
+            });
+            
+            // --- THEME TOGGLE ---
+            const applyTheme = (theme) => {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ritualAppTheme', theme);
+            };
+            
+            const loadTheme = () => {
+                const savedTheme = localStorage.getItem('ritualAppTheme') || 'dark';
+                appData.settings.theme = savedTheme;
+                applyTheme(savedTheme);
+                themeToggle.checked = savedTheme === 'light';
+            };
+            
+            // --- INITIALIZATION ---
+            loadData();
+            loadTheme();
+            setupReminders();
+            setupAutoBackup();
+            renderTodayView();
+            
+            exportBtn.addEventListener('click', exportToJSON);
+            importBtn.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    if (confirm('This will overwrite all current data. Are you sure?')) {
+                        importFromJSON(e.target.files[0]);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
